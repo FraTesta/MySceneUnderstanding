@@ -21,6 +21,8 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private SceneUnderstandingLabeler labeler = null;
 
+    private bool toggleMiniMap = false;
+
     public async void enableMeshWorld()
     {
         suManager.RenderWorldMesh = !suManager.RenderWorldMesh;
@@ -33,21 +35,55 @@ public class InputManager : MonoBehaviour
         await suManager.DisplayDataAsync();
     }
 
-    public async void toggleText()
+    public async void toggleQuads()
     {
-        labeler.DisplayTextLabels = !labeler.DisplayTextLabels;
+        suManager.RenderSceneObjects = !suManager.RenderSceneObjects;
         await suManager.DisplayDataAsync();
     }
 
-    public void toggleMiniMap()
+ 
+    /// <summary>
+    /// Turns the mini map off.
+    /// </summary>
+    private void MiniMapOff()
     {
-        GameObject suMinimap;
-        suMinimap = Instantiate(suManager.SceneRoot);
-        suMinimap.name = "Minimap";
-        suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
-        suMinimap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+        if (suMinimap != null)
+        {
+            DestroyImmediate(suMinimap);
+            suMinimap = null;
+        }
+        suManager.SceneRoot.SetActive(true);
+    }
 
-        suManager.SceneRoot.SetActive(false);
+    /// <summary>
+    /// Turns the mini map on.
+    /// </summary>
+    private void MiniMapOn()
+    {
+        if (suMinimap == null)
+        {
+            suMinimap = Instantiate(suManager.SceneRoot);
+            suMinimap.name = "Minimap";
+            suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+            suMinimap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
 
+            suManager.SceneRoot.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// Toggles the mini map on and off.
+    /// </summary>
+    public void MiniMapToggle()
+    {
+        toggleMiniMap = !toggleMiniMap;
+        if (toggleMiniMap)
+        {
+            MiniMapOn();
+        }
+        else
+        {
+            MiniMapOff();
+        }
     }
 }
