@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Microsoft.MixedReality.Toolkit.UI;
 using TMPro;
+using Microsoft.MixedReality.Toolkit.Input;
 
 public class InputManager : MonoBehaviour
 {
@@ -88,9 +89,12 @@ public class InputManager : MonoBehaviour
 
     private void addUIobjects()
     {
-        UIobject = Instantiate(SceneObjPlacer.objectPlaced);
-        UIobject.transform.parent = suMinimap.transform;
-        SceneObjPlacer.objectPlaced.SetActive(false);
+        if (SceneObjPlacer.objectPlaced != null)
+        {
+            UIobject = Instantiate(SceneObjPlacer.objectPlaced);
+            UIobject.transform.parent = suMinimap.transform;
+            SceneObjPlacer.objectPlaced.SetActive(false);
+        }
     }
 
 
@@ -120,6 +124,16 @@ public class InputManager : MonoBehaviour
             addUIobjects();
             suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
             suMinimap.transform.localScale = new Vector3(scale, scale, scale);
+            // add the collider component
+            suMinimap.AddComponent<MeshCollider>();
+            textObj.text = "Collider Added";
+
+            //Rigidbody rb = suMinimap.AddComponent<Rigidbody>();
+            // add the component Object Manipulator Grapable
+            suMinimap.AddComponent<ObjectManipulator>();
+            textObj.text = "Object Manipulator Added";
+            suMinimap.AddComponent<NearInteractionGrabbable>();
+            textObj.text = "NearInteractionGrabbable Added";
             suManager.SceneRoot.SetActive(false);
 
         }

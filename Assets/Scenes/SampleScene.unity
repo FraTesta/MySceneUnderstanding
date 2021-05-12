@@ -1631,7 +1631,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8474b6e2354c8647bebaa0ea13916ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  objToPlaceRef: {fileID: 7392839223887595722, guid: c541c849ff0cb954d83d84c4e15f1511,
+  objToPlaceRef: {fileID: 1976327359951936, guid: e9e54ebd208487c409e32502a50a1f20,
     type: 3}
   material: {fileID: 2100000, guid: 8ef78bfb6488eb14285fbea08de25b0d, type: 2}
   objectPlaced: {fileID: 0}
