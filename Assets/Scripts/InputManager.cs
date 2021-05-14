@@ -23,11 +23,9 @@ public class InputManager : MonoBehaviour
     // Istance of the map to resize it  
     private GameObject suMinimap = null;
     // Istance of te UI object to resize it as well as the map
-    private GameObject UIobject = null;
 
-    private Transform mapFrame;
-
-    private float scale = 0.1f;
+    //private GameObject UIobject = null;
+    private List<GameObject> UIobjects = new List<GameObject>();
     #endregion 
 
     [Tooltip("Reference to the main scene understanding manager for default commands.")]
@@ -64,15 +62,9 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
-    public void OnSliderUpdated(SliderEventData eventData)
-    {
-        scale = eventData.NewValue;
-        textObj.text = $"{scale:F2}";
-
-    }
 
     #region UI object resize
-    private void resizeUIObject()
+    /*private void resizeUIObject()
     {
         if (UIobject == null)
         {
@@ -85,9 +77,9 @@ public class InputManager : MonoBehaviour
             UIobject.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
             SceneObjPlacer.objectPlaced.SetActive(false);
         }
-    }
+    }*/
 
-    private void addUIobjects()
+    /*private void addUIobject()
     {
         if (SceneObjPlacer.objectPlaced != null)
         {
@@ -95,18 +87,48 @@ public class InputManager : MonoBehaviour
             UIobject.transform.parent = suMinimap.transform;
             SceneObjPlacer.objectPlaced.SetActive(false);
         }
+    }*/
+
+    // Actually this function make a copy of every UIobject placed and set the SceenRoot frame as their own reference frame.
+    // So basically it attaches the UIObject copies to a scene map hologram in order to get just one hologram for all.
+    private void addUIobjects()
+    {
+        textObj.text = "Before If";
+        if (SceneObjPlacer.objectPlaced.Count != 0)
+        {          
+            textObj.text = "After If ";
+            for (int i = 0; i < SceneObjPlacer.objectPlaced.Count; i++)
+            {               
+                textObj.text = $"{i:F2}";
+                UIobjects.Add(Instantiate(SceneObjPlacer.objectPlaced[i]));              
+                textObj.text = "After Instanciate";
+                UIobjects[i].transform.parent = suMinimap.transform;
+                textObj.text = "After parenting";
+                SceneObjPlacer.objectPlaced[i].SetActive(false);
+                textObj.text = "After Set active";
+                textObj.text = $"{i:F2}";
+            }
+        }
     }
+   // cheack if I destroy the suMinimap pbject I will destroy all the UIobjects copies as well. 
 
 
-    private void unresizeUIObject()
+   /* private void unresizeUIObject()
     {
         if(UIobject != null)
         {
             DestroyImmediate(UIobject);
             UIobject = null;
         }
-        SceneObjPlacer.objectPlaced.SetActive(true);
-    }
+        if (UIobjects != null)
+        {
+            for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
+            {
+                UIobjects[i] = null;
+                SceneObjPlacer.holoObjects[i].SetActive(true);
+            }
+        }
+    }*/
     #endregion
 
     #region Map Resize
@@ -120,20 +142,18 @@ public class InputManager : MonoBehaviour
         {
             suMinimap = Instantiate(suManager.SceneRoot);
             suMinimap.name = "Minimap";
-            
+
+            //addUIobject();
             addUIobjects();
             suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
-            suMinimap.transform.localScale = new Vector3(scale, scale, scale);
+            suMinimap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
             // add the collider component
             suMinimap.AddComponent<MeshCollider>();
-            textObj.text = "Collider Added";
 
             //Rigidbody rb = suMinimap.AddComponent<Rigidbody>();
             // add the component Object Manipulator Grapable
             suMinimap.AddComponent<ObjectManipulator>();
-            textObj.text = "Object Manipulator Added";
             suMinimap.AddComponent<NearInteractionGrabbable>();
-            textObj.text = "NearInteractionGrabbable Added";
             suManager.SceneRoot.SetActive(false);
 
         }
@@ -150,7 +170,7 @@ public class InputManager : MonoBehaviour
             suMinimap = null;
         }
         // destroy all objects
-        unresizeUIObject();
+        //unresizeUIObject();
         suManager.SceneRoot.SetActive(true);
     }
 

@@ -18,10 +18,10 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     private GameObject objToPlace = null;  // settato a public
     private bool isPlacing = false;
 
-    public GameObject objectPlaced = null; 
+    public List<GameObject> objectPlaced = new List<GameObject>(); // personal variable
 
     // Container for all instantiated objects/holograms
-    public List<GameObject> holoObjects = new List<GameObject>();
+    private List<GameObject> holoObjects = new List<GameObject>();
 
     private void StartPlacing()
     {
@@ -68,7 +68,13 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
                 childCollider.enabled = true;
             }
         }
-        objectPlaced = objToPlace;
+        /*
+        foreach (GameObject obj in holoObjects)
+        {
+            objectPlaced.Add(obj);
+        }*/
+        objectPlaced.Add(objToPlace);
+        //objectPlaced = objToPlace;
         objToPlace = null;
     }
 
