@@ -94,17 +94,17 @@ public class InputManager : MonoBehaviour
     private void addUIobjects()
     {
         textObj.text = "Before If";
-        if (SceneObjPlacer.objectPlaced.Count != 0)
+        if (SceneObjPlacer.holoObjects.Count != 0)
         {          
             textObj.text = "After If ";
-            for (int i = 0; i < SceneObjPlacer.objectPlaced.Count; i++)
+            for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
             {               
                 textObj.text = $"{i:F2}";
-                UIobjects.Add(Instantiate(SceneObjPlacer.objectPlaced[i]));              
+                UIobjects.Add(Instantiate(SceneObjPlacer.holoObjects[i]));              
                 textObj.text = "After Instanciate";
                 UIobjects[i].transform.parent = suMinimap.transform;
                 textObj.text = "After parenting";
-                SceneObjPlacer.objectPlaced[i].SetActive(false);
+                SceneObjPlacer.holoObjects[i].SetActive(false);
                 textObj.text = "After Set active";
                 textObj.text = $"{i:F2}";
             }
@@ -112,23 +112,20 @@ public class InputManager : MonoBehaviour
     }
    // cheack if I destroy the suMinimap pbject I will destroy all the UIobjects copies as well. 
 
-
-   /* private void unresizeUIObject()
+    private void removeUIObject()
     {
-        if(UIobject != null)
-        {
-            DestroyImmediate(UIobject);
-            UIobject = null;
-        }
-        if (UIobjects != null)
-        {
+        if(UIobjects.Count > 0)
+        {          
             for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
             {
-                UIobjects[i] = null;
                 SceneObjPlacer.holoObjects[i].SetActive(true);
+                DestroyImmediate(UIobjects[i]);
             }
+            UIobjects.Clear();
+
         }
-    }*/
+
+    }
     #endregion
 
     #region Map Resize
@@ -166,7 +163,8 @@ public class InputManager : MonoBehaviour
     {
         if (suMinimap != null)
         {
-            DestroyImmediate(suMinimap);
+            removeUIObject();
+            DestroyImmediate(suMinimap);           
             suMinimap = null;
         }
         // destroy all objects
@@ -194,4 +192,15 @@ public class InputManager : MonoBehaviour
         }
     }
     #endregion
+
+    public void increaseRadius()
+    {
+        suManager.BoundingSphereRadiusInMeters += suManager.BoundingSphereRadiusInMeters;
+        textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
+    }
+    public void decreaseRadius()
+    {
+        suManager.BoundingSphereRadiusInMeters -= suManager.BoundingSphereRadiusInMeters;
+        textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
+    }
 }

@@ -21,7 +21,7 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     public List<GameObject> objectPlaced = new List<GameObject>(); // personal variable
 
     // Container for all instantiated objects/holograms
-    private List<GameObject> holoObjects = new List<GameObject>();
+    public List<GameObject> holoObjects = new List<GameObject>();
 
     private void StartPlacing()
     {
