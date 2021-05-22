@@ -195,12 +195,12 @@ public class InputManager : MonoBehaviour
 
     public void increaseRadius()
     {
-        suManager.BoundingSphereRadiusInMeters += suManager.BoundingSphereRadiusInMeters;
+        suManager.BoundingSphereRadiusInMeters += 5;
         textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
     }
     public void decreaseRadius()
     {
-        suManager.BoundingSphereRadiusInMeters -= suManager.BoundingSphereRadiusInMeters;
+        suManager.BoundingSphereRadiusInMeters -= 5;
         textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
     }
 }
