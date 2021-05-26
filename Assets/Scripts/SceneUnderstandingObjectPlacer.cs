@@ -18,7 +18,7 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     private GameObject objToPlace = null;  // settato a public
     private bool isPlacing = false;
 
-    public List<GameObject> objectPlaced = new List<GameObject>(); // personal variable
+    //public List<GameObject> objectPlaced = new List<GameObject>(); // personal variable
 
     // Container for all instantiated objects/holograms
     public List<GameObject> holoObjects = new List<GameObject>();
@@ -73,9 +73,9 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
         {
             objectPlaced.Add(obj);
         }*/
-        objectPlaced.Add(objToPlace);
+        //objectPlaced.Add(objToPlace);
         //objectPlaced = objToPlace;
-        objToPlace = null;
+        //objToPlace = null;
     }
 
     private void UpdateObjPos()

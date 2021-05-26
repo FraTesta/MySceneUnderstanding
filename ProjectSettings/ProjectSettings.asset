@@ -591,14 +591,14 @@ PlayerSettings:
   apiCompatibilityLevelPerPlatform: {}
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: Template3D
+  metroPackageName: dioniso
   metroPackageVersion: 1.0.0.0
   metroCertificatePath: Assets\WSATestCertificate.pfx
   metroCertificatePassword: 
   metroCertificateSubject: DefaultCompany
   metroCertificateIssuer: DefaultCompany
   metroCertificateNotAfter: 00191f609b56d801
-  metroApplicationDescription: Template_3D
+  metroApplicationDescription: dioniso
   wsaImages: {}
   metroTileShortName: 
   metroTileShowName: 0

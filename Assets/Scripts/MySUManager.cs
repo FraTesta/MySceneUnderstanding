@@ -11,6 +11,10 @@ using Microsoft.MixedReality.SceneUnderstanding;
 using UnityEngine;
 using UnityEngine.Events;
 
+#if WINDOWS_UWP
+    using WindowsStorage = global::Windows.Storage;
+#endif
+
 /// <summary>
 /// Different rendering modes available for scene objects.
 /// </summary>
@@ -35,6 +39,11 @@ public struct HolograhicFrameData
 public class MySUManager : MonoBehaviour
 {
     #region Public Variables
+    [Header("Data Loader Mode")]
+    [Tooltip("When enabled, the scene will be queried from a device (e.g Hololens). Otherwise, a previously saved, serialized scene will be loaded and served from your PC.")]
+    public bool QuerySceneFromDevice = true;
+    [Tooltip("The scene to load when not running on the device (e.g SU_Kitchen in Resources/SerializedScenesForPCPath).")]
+    public List<TextAsset> SUSerializedScenePaths = new List<TextAsset>(0);
     [Header("Root GameObject")]
     [Tooltip("GameObject that will be the parent of all Scene Understanding related game objects. If field is left empty an empty gameobject named 'Root' will be created.")]
     public GameObject SceneRoot = null;
@@ -135,6 +144,10 @@ public class MySUManager : MonoBehaviour
     public SceneMeshLevelOfDetail MeshQuality = SceneMeshLevelOfDetail.Medium;
     [Tooltip("When enabled, requests observed and inferred regions for scene objects. When disabled, requests only the observed regions for scene objects.")]
     public bool RequestInferredRegions = true;
+    // aggiunto io 
+    [Header("Shared Map Settings")]
+    [Tooltip("Reference frame of the paralel map.")]
+    public GameObject ParallelSceneRoot = null;
     #endregion
 
     #region Private Variables
@@ -399,7 +412,7 @@ public class MySUManager : MonoBehaviour
                 int i = 0;
                 foreach (SceneObject sceneObject in sceneObjects)
                 {
-                    if (DisplaySceneObject(sceneObject))
+                    if (DisplaySceneObject(sceneObject,false))
                     {
                         if (++i % NumberOfSceneObjectsToLoadPerFrame == 0)
                         {
@@ -425,7 +438,7 @@ public class MySUManager : MonoBehaviour
     /// Create a Unity Game Object for an individual Scene Understanding Object
     /// </summary>
     /// <param name="suObject">The Scene Understanding Object to generate in Unity</param>
-    private bool DisplaySceneObject(SceneObject suObject)
+    private bool DisplaySceneObject(SceneObject suObject, bool sharedMap)
     {
         if (suObject == null)
         {
@@ -468,8 +481,14 @@ public class MySUManager : MonoBehaviour
 
         // This gameobject will hold all the geometry that represents the Scene Understanding Object
         GameObject unityParentHolderObject = new GameObject(suObject.Kind.ToString());
-        unityParentHolderObject.transform.parent = SceneRoot.transform;
-
+        if (sharedMap)
+        {
+            unityParentHolderObject.transform.parent = ParallelSceneRoot.transform;
+        }
+        else
+        {
+            unityParentHolderObject.transform.parent = SceneRoot.transform;
+        }
         // Scene Understanding uses a Right Handed Coordinate System and Unity uses a left handed one, convert.
         System.Numerics.Matrix4x4 converted4x4LocationMatrix = ConvertRightHandedMatrix4x4ToLeftHanded(suObject.GetLocationAsMatrix());
         // From the converted Matrix pass its values into the unity transform (Numerics -> Unity.Transform)
@@ -1044,9 +1063,375 @@ public class MySUManager : MonoBehaviour
     }
 
     #endregion
+
+    #region Save To Disk Functions
+
+    /// <summary>
+    /// Get the latest bytes from a Scene Queried from device
+    /// </summary>
+    private byte[] GetLatestSceneBytes()
+    {
+        byte[] sceneBytes = null;
+        lock (SUDataLock)
+        {
+            if (LatestSUSceneData != null)
+            {
+                int sceneLength = LatestSUSceneData.Length;
+                sceneBytes = new byte[sceneLength];
+
+                Array.Copy(LatestSUSceneData, sceneBytes, sceneLength);
+            }
+        }
+
+        return sceneBytes;
+    }
+
+    /// <summary>
+    /// Save a serialized scene bytes to disk
+    /// </summary>
+    // Await is conditionally compiled out based on platform but needs to be awaitable
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+    public async Task SaveBytesToDiskAsync()
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+    {
+        DateTime currentDate = DateTime.Now;
+        int year = currentDate.Year;
+        int month = currentDate.Month;
+        int day = currentDate.Day;
+        int hour = currentDate.Hour;
+        int min = currentDate.Minute;
+        int sec = currentDate.Second;
+
+        if (QuerySceneFromDevice)
+        {
+            /*string fileName = string.Format("SU_{0}-{1}-{2}_{3}-{4}-{5}.bytes",
+                                            year, month, day, hour, min, sec);
+            */
+            string fileName = "map.bytes";
+            byte[] OnDeviceBytes = GetLatestSceneBytes();
+
+#if WINDOWS_UWP
+                var folder = WindowsStorage.ApplicationData.Current.LocalFolder;
+                var file = await folder.CreateFileAsync(fileName, WindowsStorage.CreationCollisionOption.GenerateUniqueName);
+                await WindowsStorage.FileIO.WriteBytesAsync(file, OnDeviceBytes);
+#else
+            Debug.Log("Save on Device is only supported in Universal Windows Applications");
+#endif
+        }
+        else
+        {
+            int fragmentNumber = 0;
+            foreach (TextAsset serializedScene in SUSerializedScenePaths)
+            {
+                byte[] fragmentBytes = serializedScene.bytes;
+
+                string fileName = string.Format("SU_Frag{0}-{1}-{2}-{3}_{4}-{5}-{6}.bytes",
+                                                fragmentNumber++, year, month, day, hour, min, sec);
+
+                string folder = Path.GetTempPath();
+                string file = Path.Combine(folder, fileName);
+                File.WriteAllBytes(file, fragmentBytes);
+                Debug.Log("SceneUnderstandingManager.SaveBytesToDisk: Scene Fragment saved at " + file);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Save the generated Unity Objects from Scene Understanding as Obj files
+    /// to disk
+    /// </summary>
+    public async Task SaveObjsToDiskAsync()
+    {
+        DateTime currentDate = DateTime.Now;
+        int year = currentDate.Year;
+        int month = currentDate.Month;
+        int day = currentDate.Day;
+        int hour = currentDate.Hour;
+        int min = currentDate.Minute;
+        int sec = currentDate.Second;
+
+        // List of all SceneObjectKind enum values.
+        List<SceneObjectKind> sceneObjectKinds = new List<SceneObjectKind>();
+        sceneObjectKinds.Add(SceneObjectKind.Background);
+        sceneObjectKinds.Add(SceneObjectKind.Ceiling);
+        sceneObjectKinds.Add(SceneObjectKind.CompletelyInferred);
+        sceneObjectKinds.Add(SceneObjectKind.Floor);
+        sceneObjectKinds.Add(SceneObjectKind.Platform);
+        sceneObjectKinds.Add(SceneObjectKind.Unknown);
+        sceneObjectKinds.Add(SceneObjectKind.Wall);
+        sceneObjectKinds.Add(SceneObjectKind.World);
+
+        List<Task> tasks = new List<Task>();
+        Scene scene = null;
+        if (QuerySceneFromDevice)
+        {
+            SceneFragment sceneFragment = GetLatestSceneSerialization();
+            if (sceneFragment == null)
+            {
+                Debug.LogWarning("SceneUnderstandingManager.SaveObjsToDisk: Nothing to save.");
+                return;
+            }
+
+            // Deserialize the scene.
+            SceneFragment[] sceneFragmentsArray = new SceneFragment[1] { sceneFragment };
+            scene = Scene.FromFragments(sceneFragmentsArray);
+        }
+        else
+        {
+            SceneFragment[] sceneFragments = new SceneFragment[SUSerializedScenePaths.Count];
+            int index = 0;
+            foreach (TextAsset serializedScene in SUSerializedScenePaths)
+            {
+                if (serializedScene != null)
+                {
+                    byte[] sceneData = serializedScene.bytes;
+                    SceneFragment frag = SceneFragment.Deserialize(sceneData);
+                    sceneFragments[index++] = frag;
+                }
+            }
+
+            // Deserialize the scene.
+            scene = Scene.FromFragments(sceneFragments);
+        }
+
+        if (scene == null)
+        {
+            Debug.LogWarning("SceneUnderstandingManager.SaveObjsToDiskAsync: Scene is null");
+            return;
+        }
+
+        foreach (SceneObjectKind soKind in sceneObjectKinds)
+        {
+            List<SceneObject> allObjectsOfAKind = new List<SceneObject>();
+            foreach (SceneObject sceneObject in scene.SceneObjects)
+            {
+                if (sceneObject.Kind == soKind)
+                {
+                    allObjectsOfAKind.Add(sceneObject);
+                }
+            }
+
+            string fileName = string.Format("SU_{0}_{1}-{2}-{3}_{4}-{5}-{6}.obj",
+                                            soKind.ToString(), year, month, day, hour, min, sec);
+
+            if (allObjectsOfAKind.Count > 0)
+            {
+                tasks.Add(SaveAllSceneObjectsOfAKindAsOneObj(allObjectsOfAKind, GetColor(soKind), fileName));
+            }
+        }
+        await Task.WhenAll(tasks);
+    }
+
+    /// <summary>
+    /// Save the generated Unity Objects from Scene Understanding as Obj files
+    /// to disk (all objects of one kind as one obj file)
+    /// </summary>
+    private async Task SaveAllSceneObjectsOfAKindAsOneObj(List<SceneObject> sceneObjects, Color? color, string fileName)
+    {
+        if (sceneObjects == null)
+        {
+            return;
+        }
+
+        List<System.Numerics.Vector3> combinedMeshVertices = new List<System.Numerics.Vector3>();
+        List<uint> combinedMeshIndices = new List<uint>();
+
+        // Go through each scene object, retrieve its meshes and add them to the combined lists, defined above.
+        foreach (SceneObject so in sceneObjects)
+        {
+            if (so == null)
+            {
+                continue;
+            }
+
+            IEnumerable<SceneMesh> meshes = so.Meshes;
+            if (meshes == null)
+            {
+                continue;
+            }
+
+            foreach (SceneMesh mesh in meshes)
+            {
+                // Get the mesh vertices.
+                var mvList = new System.Numerics.Vector3[mesh.VertexCount];
+                mesh.GetVertexPositions(mvList);
+
+                // Transform the vertices using the transformation matrix.
+                TransformVertices(so.GetLocationAsMatrix(), mvList);
+
+                // Store the current set of vertices in the combined list. As we add indices, we'll offset it by this value.
+                uint indexOffset = (uint)combinedMeshVertices.Count;
+
+                // Add the new set of mesh vertices to the existing set.
+                combinedMeshVertices.AddRange(mvList);
+
+                // Get the mesh indices.
+                uint[] mi = new uint[mesh.TriangleIndexCount];
+                mesh.GetTriangleIndices(mi);
+
+                // Add the new set of mesh indices to the existing set.
+                for (int i = 0; i < mi.Length; ++i)
+                {
+                    combinedMeshIndices.Add((uint)(mi[i] + indexOffset));
+                }
+            }
+        }
+
+        // Write as string to file.
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < combinedMeshVertices.Count; ++i)
+        {
+            sb.Append(string.Format("v {0} {1} {2} {3} {4} {5}\n", combinedMeshVertices[i].X, combinedMeshVertices[i].Y, combinedMeshVertices[i].Z, color.Value.r, color.Value.g, color.Value.b));
+        }
+
+        for (int i = 0; i < combinedMeshIndices.Count; i += 3)
+        {
+            // Indices start at index 1 (as opposed to 0) in objs.
+            sb.Append(string.Format("f {0} {1} {2}\n", combinedMeshIndices[i] + 1, combinedMeshIndices[i + 1] + 1, combinedMeshIndices[i + 2] + 1));
+        }
+
+        await SaveStringToDiskAsync(sb.ToString(), fileName);
+    }
+
+    /// <summary>
+    /// Save a string to disk
+    /// this string is the obj file that represents the SU Geometry
+    /// </summary>
+    // Await is conditionally compiled out based on platform but needs to be awaitable
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+    private async Task SaveStringToDiskAsync(string data, string fileName)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+    {
+        if (string.IsNullOrEmpty(data))
+        {
+            Debug.LogWarning("SceneUnderstandingManager.SaveStringToDiskAsync: Nothing to save.");
+            return;
+        }
+
+        if (QuerySceneFromDevice)
+        {
+#if WINDOWS_UWP
+                var folder = WindowsStorage.ApplicationData.Current.LocalFolder;
+                var file = await folder.CreateFileAsync(fileName, WindowsStorage.CreationCollisionOption.GenerateUniqueName);
+                await WindowsStorage.FileIO.AppendTextAsync(file, data);
+#else
+            Debug.Log("Save on Device is only supported in Universal Windows Applications");
+#endif
+        }
+        else
+        {
+            string folder = Path.GetTempPath();
+            string file = Path.Combine(folder, fileName);
+            File.WriteAllText(file, data);
+            Debug.Log("SceneUnderstandingManager.SaveStringToDiskAsync: Scene Objects saved at " + file);
+        }
+    }
+
+    private void TransformVertices(System.Numerics.Matrix4x4 transformationMatrix, System.Numerics.Vector3[] vertices)
+    {
+        for (int i = 0; i < vertices.Length; ++i)
+        {
+            vertices[i] = System.Numerics.Vector3.Transform(vertices[i], transformationMatrix);
+        }
+    }
+
+    #endregion
+
+    #region Load To Disk Functions
+    private SceneFragment GetParallelSceneSerialization(byte[] sceneBytes)
+    {
+        SceneFragment fragmentToReturn = null;
+        lock (SUDataLock)
+        {
+            if (sceneBytes != null)
+            {
+                int sceneBytesLength = sceneBytes.Length;
+                //Array.Copy(sceneBytes, LatestSUSceneDat, sceneBytesLength);
+
+                fragmentToReturn = SceneFragment.Deserialize(sceneBytes);
+            }
+        }
+        return fragmentToReturn;
+    }
+
+    private void CreateParallelScene(byte[] parallelSceneBytes)
+    {
+        Scene parallelScene = null;
+        SceneFragment parallelSceneFragment = GetParallelSceneSerialization(parallelSceneBytes);
+        SceneFragment[] sceneFragmentsArray = new SceneFragment[1] { parallelSceneFragment };
+        parallelScene = Scene.FromFragments(sceneFragmentsArray);
+
+        // eventualmente genero GUID di questa scene 
+
+        if (parallelScene != null)
+        {
+            // Retrieve a transformation matrix that will allow us orient the Scene Understanding Objects into
+            // their correct corresponding position in the unity world
+            System.Numerics.Matrix4x4? sceneToUnityTransformAsMatrix4x4 = GetSceneToUnityTransformAsMatrix4x4(parallelScene);
+
+            if (sceneToUnityTransformAsMatrix4x4 != null)
+            {
+                // If there was previously a scene displayed in the game world, destroy it
+                // to avoid overlap with the new scene about to be displayed
+                //DestroyAllGameObjectsUnderParent(SceneRoot.transform);
+                //GameObject ParallelSceneRoot = GameObject.Find("ParallelSceneRoot");
+                // Allow from one frame to yield the coroutine back to the main thread
+                //yield return null;
+
+                // Using the transformation matrix generated above, port its values into the tranform of the scene root (Numerics.matrix -> GameObject.Transform)
+                SetUnityTransformFromMatrix4x4(ParallelSceneRoot.transform, sceneToUnityTransformAsMatrix4x4.Value);
+
+
+                // After the scene has been oriented, loop through all the scene objects and
+                // generate their corresponding Unity Object
+                IEnumerable<SceneObject> sceneObjects = parallelScene.SceneObjects;
+
+                int i = 0;
+                foreach (SceneObject sceneObject in sceneObjects)
+                {
+                    if (DisplaySceneObject(sceneObject, true))
+                    {
+                        if (++i % NumberOfSceneObjectsToLoadPerFrame == 0)
+                        {
+                            // Allow a certain number of objects to load before yielding back to main thread
+                            //yield return null;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Task che permette di caricare una scena salvata come file.bin
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+    public async Task LoadByteFromDiskAsync()
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+    {
+        byte[] OnDeviceBytes = null;
+
+        string fileName = "map.bytes";
+
+#if WINDOWS_UWP
+        var folder = WindowsStorage.ApplicationData.Current.LocalFolder;
+        //var file = await folder.CreateFileAsync(fileName, WindowsStorage.CreationCollisionOption.GenerateUniqueName);
+        //await WindowsStorage.FileIO.WriteBytesAsync(file, OnDeviceBytes);
+#else
+        Debug.Log("Save on Device is only supported in Universal Windows Applications");
+#endif
+        // CI VUOLE IL PATH DEL FOLDER 
+        using (FileStream SourceStream = File.Open(fileName, FileMode.Open))
+        {
+            OnDeviceBytes = new byte[SourceStream.Length];
+            await SourceStream.ReadAsync(OnDeviceBytes, 0, (int)SourceStream.Length);
+        }
+        CreateParallelScene(OnDeviceBytes);
+
+    }
+    #endregion
 }
 
 
 
-   
+
 

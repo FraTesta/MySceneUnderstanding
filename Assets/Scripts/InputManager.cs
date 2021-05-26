@@ -60,53 +60,37 @@ public class InputManager : MonoBehaviour
         suManager.RenderSceneObjects = !suManager.RenderSceneObjects;
         await suManager.DisplayDataAsync();
     }
+
+    public void increaseRadius()
+    {
+        suManager.BoundingSphereRadiusInMeters += 5;
+        textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
+    }
+    public void decreaseRadius()
+    {
+        suManager.BoundingSphereRadiusInMeters -= 5;
+        textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
+    }
     #endregion
 
-
     #region UI object resize
-    /*private void resizeUIObject()
-    {
-        if (UIobject == null)
-        {
-            UIobject = Instantiate(SceneObjPlacer.objectPlaced);
-            // riportare la posizione dell'oggetto rispetto a questo frame.
-
-            // setto il teso
-            //UIobject.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
-            UIobject.transform.position = new Vector3(0, 0, 0);
-            UIobject.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-            SceneObjPlacer.objectPlaced.SetActive(false);
-        }
-    }*/
-
-    /*private void addUIobject()
-    {
-        if (SceneObjPlacer.objectPlaced != null)
-        {
-            UIobject = Instantiate(SceneObjPlacer.objectPlaced);
-            UIobject.transform.parent = suMinimap.transform;
-            SceneObjPlacer.objectPlaced.SetActive(false);
-        }
-    }*/
 
     // Actually this function make a copy of every UIobject placed and set the SceenRoot frame as their own reference frame.
     // So basically it attaches the UIObject copies to a scene map hologram in order to get just one hologram for all.
     private void addUIobjects()
     {
-        textObj.text = "Before If";
         if (SceneObjPlacer.holoObjects.Count != 0)
         {          
-            textObj.text = "After If ";
             for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
-            {               
-                textObj.text = $"{i:F2}";
+            {
+                SceneObjPlacer.transform.parent = suMinimap.transform;
+                /*
                 UIobjects.Add(Instantiate(SceneObjPlacer.holoObjects[i]));              
-                textObj.text = "After Instanciate";
                 UIobjects[i].transform.parent = suMinimap.transform;
                 textObj.text = "After parenting";
                 SceneObjPlacer.holoObjects[i].SetActive(false);
                 textObj.text = "After Set active";
-                textObj.text = $"{i:F2}";
+                textObj.text = $"{i:F2}";*/
             }
         }
     }
@@ -128,7 +112,7 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
-    #region Map Resize
+    #region MiniMap Resize
 
     /// <summary>
     /// Turns the mini map on.
@@ -193,14 +177,18 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
-    public void increaseRadius()
+    #region Save And Load Scene
+    public void SaveData()
     {
-        suManager.BoundingSphereRadiusInMeters += 5;
-        textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
+        var bytes = suManager.SaveBytesToDiskAsync();
+        //var objs = suManager.SaveObjsToDiskAsync();
     }
-    public void decreaseRadius()
+
+    public void LoadData()
     {
-        suManager.BoundingSphereRadiusInMeters -= 5;
-        textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
+        
     }
+
+
+    #endregion
 }
