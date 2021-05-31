@@ -10,6 +10,11 @@ using Microsoft.MixedReality.Toolkit.UI;
 using TMPro;
 using Microsoft.MixedReality.Toolkit.Input;
 
+
+#if WINDOWS_UWP
+    using WindowsStorage = global::Windows.Storage;
+#endif
+
 public class InputManager : MonoBehaviour
 {
     #region Public Variables
@@ -41,6 +46,8 @@ public class InputManager : MonoBehaviour
     private SceneUnderstandingLabeler labeler = null;
 
     private bool toggleMiniMap = false;
+
+    private bool toggleSceenRoot = false;
 
     #region Toggle Map Features
     public async void enableMeshWorld()
@@ -75,22 +82,28 @@ public class InputManager : MonoBehaviour
 
     #region UI object resize
 
-    // Actually this function make a copy of every UIobject placed and set the SceenRoot frame as their own reference frame.
-    // So basically it attaches the UIObject copies to a scene map hologram in order to get just one hologram for all.
+    /// <summary>
+    /// This function attach all UIObject to the MiniMap hologram in order to represent them in the resized map.
+    /// </summary>
     private void addUIobjects()
     {
+        textObj.text = "Inside addUIObjects";
         if (SceneObjPlacer.holoObjects.Count != 0)
-        {          
+        {
+            textObj.text = "Dentro If";
             for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
             {
-                SceneObjPlacer.transform.parent = suMinimap.transform;
-                /*
+                //textObj.text = SceneObjPlacer.holoObjects[i].transform.parent.gameObject.name;
+                //objOriginalTransform.Add(SceneObjPlacer.holoObjects[i].transform.parent);
+                //textObj.text = "Salvato l'origin farme dell Ui Object";
+                //SceneObjPlacer.holoObjects[i].transform.parent = suMinimap.transform;
+                
                 UIobjects.Add(Instantiate(SceneObjPlacer.holoObjects[i]));              
                 UIobjects[i].transform.parent = suMinimap.transform;
                 textObj.text = "After parenting";
                 SceneObjPlacer.holoObjects[i].SetActive(false);
                 textObj.text = "After Set active";
-                textObj.text = $"{i:F2}";*/
+                textObj.text = $"{i:F2}";
             }
         }
     }
@@ -99,15 +112,28 @@ public class InputManager : MonoBehaviour
     private void removeUIObject()
     {
         if(UIobjects.Count > 0)
-        {          
+        {
             for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
             {
+                suMinimap.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
+                textObj.text = "update scale ";
+                SceneObjPlacer.holoObjects[i].transform.localPosition = UIobjects[i].transform.localPosition;
+                textObj.text = "update position ";
+                SceneObjPlacer.holoObjects[i].transform.localRotation = UIobjects[i].transform.localRotation;
+                textObj.text = "update rotation ";
+
                 SceneObjPlacer.holoObjects[i].SetActive(true);
                 DestroyImmediate(UIobjects[i]);
-            }
-            UIobjects.Clear();
+                //SceneObjPlacer.holoObjects[i].transform.parent = null;
+                //textObj.text = "parent null";
+                //SceneObjPlacer.holoObjects[i].transform.localScale = new Vector3(10.0f, 10.0f, 10.0f);
+                //textObj.text = "Aggiorate le dimensioni degli UI Obj";
 
+            }
+            
+            UIobjects.Clear();
         }
+        
 
     }
     #endregion
@@ -152,7 +178,6 @@ public class InputManager : MonoBehaviour
             suMinimap = null;
         }
         // destroy all objects
-        //unresizeUIObject();
         suManager.SceneRoot.SetActive(true);
     }
 
@@ -178,17 +203,87 @@ public class InputManager : MonoBehaviour
     #endregion
 
     #region Save And Load Scene
+    /// <summary>
+    /// Save the current scene on the device as binary file
+    /// </summary>
     public void SaveData()
     {
         var bytes = suManager.SaveBytesToDiskAsync();
         //var objs = suManager.SaveObjsToDiskAsync();
+        //textObj.text = "Save Map";
     }
-
+    /// <summary>
+    /// Load a scene from the device 
+    /// </summary>
     public void LoadData()
     {
-        
+        var bytes = suManager.LoadByteFromDiskAsync();
+        //textObj.text = "Map Loaded";
     }
 
-
     #endregion
+
+    #region Share Map
+    private void SharedMiniMapOn()
+    {
+        if (suMinimap == null)
+        {
+            suMinimap = Instantiate(suManager.ParallelSceneRoot);
+            suMinimap.name = "SharedMinimap";
+
+            //addUIobject();
+            //addUIobjects();
+            suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+            suMinimap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+            // add the collider component
+            suMinimap.AddComponent<MeshCollider>();
+
+            //Rigidbody rb = suMinimap.AddComponent<Rigidbody>();
+            // add the component Object Manipulator Grapable
+            suMinimap.AddComponent<ObjectManipulator>();
+            suMinimap.AddComponent<NearInteractionGrabbable>();
+            suManager.SceneRoot.SetActive(false);
+            suManager.ParallelSceneRoot.SetActive(false);
+
+        }
+    }
+
+    /// <summary>
+    /// Turns the mini map off.
+    /// </summary>
+    private void SharedMiniMapOff()
+    {
+        if (suMinimap != null)
+        {
+            //removeUIObject();
+            DestroyImmediate(suMinimap);
+            suMinimap = null;
+        }
+        // destroy all objects
+        //unresizeUIObject();
+        suManager.SceneRoot.SetActive(true);
+        suManager.ParallelSceneRoot.SetActive(true);
+    }
+    public void SharedMiniMapToggle()
+    {
+        toggleMiniMap = !toggleMiniMap;
+        if (toggleMiniMap)
+        {
+            SharedMiniMapOn();
+            //Resize UISceneObject 
+            //resizeUIObject();
+        }
+        else
+        {
+            SharedMiniMapOff();
+            //unresizeUIObject();
+        }
+    }
+    #endregion
+
+    public void toggoleSceneRootMesh()
+    {
+        toggleSceenRoot = !toggleSceenRoot;
+        suManager.SceneRoot.SetActive(toggleSceenRoot);
+    }
 }

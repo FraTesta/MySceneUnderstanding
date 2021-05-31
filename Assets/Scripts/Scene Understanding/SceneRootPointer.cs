@@ -12,6 +12,4 @@ public class SceneRootPointer : MonoBehaviour
         sceneRootPointer.transform.localPosition = Vector3.zero;
         sceneRootPointer.transform.localRotation = Quaternion.identity;
     }
-
-
 }

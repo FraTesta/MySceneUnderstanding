@@ -26,7 +26,7 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     private void StartPlacing()
     {
         objToPlace = Instantiate<GameObject>(objToPlaceRef, Vector3.zero, Quaternion.identity);
-
+        objToPlace.transform.parent = GameObject.Find("SceneObjectPlacerManager").transform;
         // Add object to the list
         holoObjects.Add(objToPlace);
 
@@ -75,7 +75,7 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
         }*/
         //objectPlaced.Add(objToPlace);
         //objectPlaced = objToPlace;
-        //objToPlace = null;
+        objToPlace = null;
     }
 
     private void UpdateObjPos()
