@@ -158,6 +158,8 @@ public class MySUManager : MonoBehaviour
 
     [SerializeField]
     public TextMeshPro textObj = null;
+
+    public GameObject cup;
     #endregion
 
     #region Private Variables
@@ -408,6 +410,10 @@ public class MySUManager : MonoBehaviour
                 // If there was previously a scene displayed in the game world, destroy it
                 // to avoid overlap with the new scene about to be displayed
                 DestroyAllGameObjectsUnderParent(SceneRoot.transform);
+                // AGGIUNTA PER VEDERE POSIZIONE 
+                GameObject cupI = Instantiate(cup);
+                cupI.transform.parent = SceneRoot.transform;
+                cupI.transform.localPosition = Vector3.zero;
 
                 // Allow from one frame to yield the coroutine back to the main thread
                 yield return null;

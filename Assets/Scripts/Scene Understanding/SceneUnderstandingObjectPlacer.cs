@@ -24,16 +24,10 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     // Container for all instantiated objects/holograms
     public List<GameObject> holoObjects = new List<GameObject>();
 
-    private void Start()
-    {
-        parentFrame.transform.parent = GameObject.Find("SceneRoot").transform;
-    }
 
     private void StartPlacing()
     {
         objToPlace = Instantiate<GameObject>(objToPlaceRef, Vector3.zero, Quaternion.identity);
-        parentFrame.transform.parent = GameObject.Find("SceneRoot").transform;
-        parentFrame.transform.localPosition = Vector3.zero;
         objToPlace.transform.parent = parentFrame.transform;
         // Add object to the list
         holoObjects.Add(objToPlace);

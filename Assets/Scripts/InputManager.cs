@@ -31,6 +31,10 @@ public class InputManager : MonoBehaviour
 
     //private GameObject UIobject = null;
     private List<GameObject> UIobjects = new List<GameObject>();
+
+    //Transform Matrix from the SceneRoot frame w.r.t the WorldFrame
+    private Matrix4x4 SceneRootTrasnMat;
+
     #endregion 
 
     [Tooltip("Reference to the main scene understanding manager for default commands.")]
@@ -117,9 +121,10 @@ public class InputManager : MonoBehaviour
             {
                 suMinimap.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
                 textObj.text = "update scale ";
-                SceneObjPlacer.holoObjects[i].transform.localPosition = UIobjects[i].transform.localPosition;
-                textObj.text = "update position ";
-                SceneObjPlacer.holoObjects[i].transform.localRotation = UIobjects[i].transform.localRotation;
+                var UIObjectWorldFrame = SceneRootTrasnMat * UIobjects[i].transform.localPosition;
+                SceneObjPlacer.holoObjects[i].transform.position = new Vector3(UIObjectWorldFrame.x, UIObjectWorldFrame.y, UIObjectWorldFrame.z);
+                //textObj.text = "update position ";
+                //SceneObjPlacer.holoObjects[i].transform.localRotation = UIobjects[i].transform.localRotation;
                 textObj.text = "update rotation ";
 
                 SceneObjPlacer.holoObjects[i].SetActive(true);
@@ -145,6 +150,9 @@ public class InputManager : MonoBehaviour
     {
         if (suMinimap == null)
         {
+            // Update the transform mutrix with the current position and rotation of the SceneRoot frame w.r.t. the global one
+            SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
+            
             suMinimap = Instantiate(suManager.SceneRoot);
             suMinimap.name = "Minimap";
 

@@ -855,6 +855,7 @@ MonoBehaviour:
   RequestInferredRegions: 1
   ParallelSceneRoot: {fileID: 1727745538}
   textObj: {fileID: 867233659}
+  cup: {fileID: 1815094408320666, guid: f38f91f5021c38349977adac4cf8ecc3, type: 3}
 --- !u!4 &537355861
 Transform:
   m_ObjectHideFlags: 0
@@ -1852,7 +1853,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1114040583}
-  - component: {fileID: 1114040581}
   m_Layer: 0
   m_Name: LoadedMap
   m_TagString: Untagged
@@ -1860,14 +1860,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!33 &1114040581
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1114040580}
-  m_Mesh: {fileID: 0}
 --- !u!4 &1114040583
 Transform:
   m_ObjectHideFlags: 0
@@ -1876,7 +1868,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1114040580}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.172, y: 0.492, z: 0.847}
+  m_LocalPosition: {x: -0.256, y: 0.2, z: 1.256}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1957926645}
@@ -2153,7 +2145,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SceneRoot: {fileID: 924390860}
-  material: {fileID: 2100000, guid: 0746671642388094aa5fc149eb6c23be, type: 2}
+  material: {fileID: 2100000, guid: 86ec9582d8dcbc34bac58ae621e24af9, type: 2}
   LoadedMap: {fileID: 1114040580}
   textObj: {fileID: 867233659}
   parallelSceneRoot: {fileID: 0}
@@ -2326,6 +2318,7 @@ MonoBehaviour:
   objToPlaceRef: {fileID: 1976327359951936, guid: e9e54ebd208487c409e32502a50a1f20,
     type: 3}
   material: {fileID: 2100000, guid: 8ef78bfb6488eb14285fbea08de25b0d, type: 2}
+  parentFrame: {fileID: 1958348131}
   holoObjects: []
 --- !u!4 &1958348133
 Transform:
