@@ -14,6 +14,7 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
 {
     public GameObject objToPlaceRef;
     public Material material;
+    public GameObject parentFrame;
 
     private GameObject objToPlace = null;  // settato a public
     private bool isPlacing = false;
@@ -23,10 +24,17 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     // Container for all instantiated objects/holograms
     public List<GameObject> holoObjects = new List<GameObject>();
 
+    private void Start()
+    {
+        parentFrame.transform.parent = GameObject.Find("SceneRoot").transform;
+    }
+
     private void StartPlacing()
     {
         objToPlace = Instantiate<GameObject>(objToPlaceRef, Vector3.zero, Quaternion.identity);
-        objToPlace.transform.parent = GameObject.Find("SceneObjectPlacerManager").transform;
+        parentFrame.transform.parent = GameObject.Find("SceneRoot").transform;
+        parentFrame.transform.localPosition = Vector3.zero;
+        objToPlace.transform.parent = parentFrame.transform;
         // Add object to the list
         holoObjects.Add(objToPlace);
 

@@ -128,9 +128,7 @@ public class InputManager : MonoBehaviour
                 //textObj.text = "parent null";
                 //SceneObjPlacer.holoObjects[i].transform.localScale = new Vector3(10.0f, 10.0f, 10.0f);
                 //textObj.text = "Aggiorate le dimensioni degli UI Obj";
-
-            }
-            
+            }            
             UIobjects.Clear();
         }
         

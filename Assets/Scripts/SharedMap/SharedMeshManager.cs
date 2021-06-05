@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using TMPro;
+using Microsoft.MixedReality.Toolkit.UI;
+using Microsoft.MixedReality.Toolkit.Input;
 
 #if WINDOWS_UWP
     using WindowsStorage = global::Windows.Storage;
@@ -123,22 +125,28 @@ public class SharedMeshManager : MonoBehaviour
                             if(bytes == null){
                                textObj.text = "Bytes are null";
                             }
-                            MeshRenderer rootMeshRender = LoadedMap.AddComponent<MeshRenderer>() as MeshRenderer;
-                            rootMeshRender.material = material;
-                            textObj.text = "Add material correctly";
-                            LoadedMap.GetComponent<MeshFilter>().mesh = MeshSerializer.ReadMesh(bytes);
-                            LoadedMap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-                            LoadedMap.transform.position = new Vector3(1,0,3);
-                            LoadedMap.transform.rotation = Quaternion.Euler(0, 0, 0);
-                            textObj.text = "Mesh Map Loaded correctly";
-                        }
+                            LoadedMap.AddComponent<MeshFilter>();
+                            LoadedMap.AddComponent<MeshRenderer>();
 
-                
-                
+                            material.SetColor("_Color", Color.red);
+                            LoadedMap.transform.GetComponent<MeshRenderer>().material = material;
+
+                            textObj.text = "Add material correctly";
+                            LoadedMap.transform.GetComponent<MeshFilter>().mesh = MeshSerializer.ReadMesh(bytes);
+                            LoadedMap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+                            //LoadedMap.transform.position = new Vector3(1,0,3);
+                            LoadedMap.transform.rotation = Quaternion.Euler(0, 0, 0);
+                            textObj.text = "hologram componets added";
+                            //LoadedMap.AddComponent<MeshCollider>();
+                            //LoadedMap.AddComponent<ObjectManipulator>();
+                            //LoadedMap.AddComponent<NearInteractionGrabbable>();
+                            textObj.text = "Mesh Map Loaded correctly";
+                        }                
 
 #else
         Debug.Log("Load on Device is only supported in Universal Windows Applications");
-        
+
+
 #endif
     }
     
