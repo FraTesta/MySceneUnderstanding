@@ -145,9 +145,46 @@ public class SharedMeshManager : MonoBehaviour
 
 #else
         Debug.Log("Load on Device is only supported in Universal Windows Applications");
-
-
 #endif
     }
-    
+
+    public byte[] SaveMeshAsByte()
+    {
+        combineMesh();
+        return MeshSerializer.WriteMesh(rootMesh.mesh, true);
+    }
+
+    public void LoadMeshByte(byte[] meshByte)
+    {
+        if (meshByte != null)
+        {
+            if (LoadedMap.GetComponent<MeshFilter>() == false)
+            {
+                LoadedMap.AddComponent<MeshFilter>();
+            }
+            if (LoadedMap.GetComponent<MeshRenderer>() == false)
+            {
+                LoadedMap.AddComponent<MeshRenderer>();
+            }
+            
+
+            material.SetColor("_Color", Color.red);
+            LoadedMap.transform.GetComponent<MeshRenderer>().material = material;
+
+            textObj.text = "Add material correctly";
+            LoadedMap.transform.GetComponent<MeshFilter>().mesh = MeshSerializer.ReadMesh(meshByte);
+            LoadedMap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+            //LoadedMap.transform.position = new Vector3(1,0,3);
+            LoadedMap.transform.rotation = Quaternion.Euler(0, 0, 0);
+            textObj.text = "hologram componets added";
+            //LoadedMap.AddComponent<MeshCollider>();
+            //LoadedMap.AddComponent<ObjectManipulator>();
+            //LoadedMap.AddComponent<NearInteractionGrabbable>();
+            textObj.text = "Mesh Map Loaded correctly";
+
+        }
+        else {
+            textObj.text = "Bytes are null";
+        }
+    }
 }

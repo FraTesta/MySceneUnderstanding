@@ -9,6 +9,7 @@ using UnityEngine.Events;
 using Microsoft.MixedReality.Toolkit.UI;
 using TMPro;
 using Microsoft.MixedReality.Toolkit.Input;
+using MRTK.Tutorials.AzureCloudServices.Scripts.Managers;
 
 
 #if WINDOWS_UWP
@@ -20,6 +21,9 @@ public class InputManager : MonoBehaviour
     #region Public Variables
     [SerializeField]
     public TextMeshPro textObj = null;
+    [SerializeField]
+    public GameObject loadedMap = null;
+
 
     #endregion
 
@@ -45,9 +49,16 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private SceneUnderstandingObjectPlacer SceneObjPlacer;
 
-    [Tooltip("Reference to the Labeler Component for SU Scene")]
+    [Tooltip("Reference to the DataManager to handle the Azure Servicies")]
     [SerializeField]
-    private SceneUnderstandingLabeler labeler = null;
+    private DataManager dataManager;
+
+    [Tooltip("Reference to the DataManager to handle the Azure Servicies")]
+    [SerializeField]
+    private SharedMeshManager sharedMeshManager;
+
+
+
 
     private bool toggleMiniMap = false;
 
@@ -287,9 +298,30 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
+    #region Utility Function
     public void toggoleSceneRootMesh()
     {
         toggleSceenRoot = !toggleSceenRoot;
         suManager.SceneRoot.SetActive(toggleSceenRoot);
     }
+    #endregion
+    #region Azure Servicies
+    public async void uploadMeshOnBLOB()
+    {
+        byte[] mesh = sharedMeshManager.SaveMeshAsByte();
+        textObj.text = "Saved mesh correctly";
+        await dataManager.UploadBlob(mesh, "meshBLOB");
+        textObj.text = "Mesh Saved on Blob";
+    }
+
+    public async void downloadMeshFromBLOB()
+    {
+        var returnedMesh  = dataManager.DownloadBlob("meshBLOB");
+        byte[] mesh = await returnedMesh;
+        textObj.text = "Download mesh correctly";
+        sharedMeshManager.LoadMeshByte(mesh);
+        textObj.text = "Loaded mesh correctly";
+    }
+    #endregion
+
 }
