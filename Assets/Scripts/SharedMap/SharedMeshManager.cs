@@ -5,6 +5,7 @@ using System.IO;
 using TMPro;
 using Microsoft.MixedReality.Toolkit.UI;
 using Microsoft.MixedReality.Toolkit.Input;
+using B83.MeshTools;
 
 #if WINDOWS_UWP
     using WindowsStorage = global::Windows.Storage;
@@ -25,10 +26,9 @@ public class SharedMeshManager : MonoBehaviour
     [SerializeField]
     public GameObject LoadedMap = null;
 
-
     public TextMeshPro textObj = null;
 
-    public GameObject parallelSceneRoot;
+    private GameObject parallelSceneRoot;
 
     private MeshFilter rootMesh;
 
@@ -101,7 +101,7 @@ public class SharedMeshManager : MonoBehaviour
 #if WINDOWS_UWP
                 var folder = WindowsStorage.ApplicationData.Current.LocalFolder;
                 string path = folder.Path + "/meshMap.bin";
-                byte[] bytes = MeshSerializer.WriteMesh(rootMesh.mesh, true);
+                byte[] bytes = MeshSerializer.SerializeMesh(rootMesh.mesh);
                 File.WriteAllBytes(path, bytes);
                 textObj.text ="Save Data here :" + path;
 
@@ -132,7 +132,7 @@ public class SharedMeshManager : MonoBehaviour
                             LoadedMap.transform.GetComponent<MeshRenderer>().material = material;
 
                             textObj.text = "Add material correctly";
-                            LoadedMap.transform.GetComponent<MeshFilter>().mesh = MeshSerializer.ReadMesh(bytes);
+                            LoadedMap.transform.GetComponent<MeshFilter>().mesh = MeshSerializer.DeserializeMesh(bytes);
                             LoadedMap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
                             //LoadedMap.transform.position = new Vector3(1,0,3);
                             LoadedMap.transform.rotation = Quaternion.Euler(0, 0, 0);
@@ -151,7 +151,7 @@ public class SharedMeshManager : MonoBehaviour
     public byte[] SaveMeshAsByte()
     {
         combineMesh();
-        return MeshSerializer.WriteMesh(rootMesh.mesh, true);
+        return MeshSerializer.SerializeMesh(rootMesh.mesh);
     }
 
     public void LoadMeshByte(byte[] meshByte)
@@ -172,7 +172,7 @@ public class SharedMeshManager : MonoBehaviour
             LoadedMap.transform.GetComponent<MeshRenderer>().material = material;
 
             textObj.text = "Add material correctly";
-            LoadedMap.transform.GetComponent<MeshFilter>().mesh = MeshSerializer.ReadMesh(meshByte);
+            LoadedMap.transform.GetComponent<MeshFilter>().mesh = MeshSerializer.DeserializeMesh(meshByte);
             LoadedMap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
             //LoadedMap.transform.position = new Vector3(1,0,3);
             LoadedMap.transform.rotation = Quaternion.Euler(0, 0, 0);

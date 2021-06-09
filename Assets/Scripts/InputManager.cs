@@ -21,8 +21,6 @@ public class InputManager : MonoBehaviour
     #region Public Variables
     [SerializeField]
     public TextMeshPro textObj = null;
-    [SerializeField]
-    public GameObject loadedMap = null;
 
 
     #endregion
@@ -299,6 +297,9 @@ public class InputManager : MonoBehaviour
     #endregion
 
     #region Utility Function
+    /// <summary>
+    /// To toggle the SceneRoot the visibility GameObject just for testing
+    /// </summary>
     public void toggoleSceneRootMesh()
     {
         toggleSceenRoot = !toggleSceenRoot;
@@ -306,6 +307,9 @@ public class InputManager : MonoBehaviour
     }
     #endregion
     #region Azure Servicies
+    /// <summary>
+    /// Method to upload the current Mesh of the map on the Azure Cloud as binary file
+    /// </summary>
     public async void uploadMeshOnBLOB()
     {
         byte[] mesh = sharedMeshManager.SaveMeshAsByte();
@@ -314,6 +318,9 @@ public class InputManager : MonoBehaviour
         textObj.text = "Mesh Saved on Blob";
     }
 
+    /// <summary>
+    /// Mthod to download the last mesh uploaded on the Azure BLOB Cloud
+    /// </summary>
     public async void downloadMeshFromBLOB()
     {
         var returnedMesh  = dataManager.DownloadBlob("meshBLOB");

@@ -335,7 +335,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   textObj: {fileID: 867233659}
-  loadedMap: {fileID: 1114040580}
   suManager: {fileID: 537355860}
   SceneObjPlacer: {fileID: 1958348132}
   dataManager: {fileID: 837286151}
@@ -1813,36 +1812,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1000445164}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1114040580
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1114040583}
-  m_Layer: 0
-  m_Name: LoadedMap
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1114040583
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1114040580}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.256, y: 0.2, z: 1.256}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 11
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1370821790
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2114,7 +2083,7 @@ PrefabInstance:
     - target: {fileID: 3592718400668087300, guid: 375369510d9c8fd428ed10a1f6bef485,
         type: 3}
       propertyPath: m_RootOrder
-      value: 12
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 3592718400668087300, guid: 375369510d9c8fd428ed10a1f6bef485,
         type: 3}
@@ -2154,7 +2123,7 @@ PrefabInstance:
     - target: {fileID: 9157887926618156860, guid: 375369510d9c8fd428ed10a1f6bef485,
         type: 3}
       propertyPath: blockBlobContainerName
-      value: track-object-thumbnails
+      value: mesh-map-thumbnails
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 375369510d9c8fd428ed10a1f6bef485, type: 3}
@@ -2169,7 +2138,7 @@ GameObject:
   - component: {fileID: 1727745539}
   - component: {fileID: 1727745540}
   m_Layer: 0
-  m_Name: ParallelMapManager
+  m_Name: SharedMapsManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2203,9 +2172,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SceneRoot: {fileID: 924390860}
   material: {fileID: 2100000, guid: 86ec9582d8dcbc34bac58ae621e24af9, type: 2}
-  LoadedMap: {fileID: 1114040580}
+  LoadedMap: {fileID: 1727745538}
   textObj: {fileID: 867233659}
-  parallelSceneRoot: {fileID: 0}
 --- !u!1 &1741489671
 GameObject:
   m_ObjectHideFlags: 0
