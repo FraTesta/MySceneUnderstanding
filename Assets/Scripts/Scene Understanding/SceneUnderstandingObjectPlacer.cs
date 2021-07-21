@@ -28,7 +28,8 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     private void StartPlacing()
     {
         objToPlace = Instantiate<GameObject>(objToPlaceRef, Vector3.zero, Quaternion.identity);
-        objToPlace.transform.parent = parentFrame.transform;
+        objToPlace.name = "anchor";
+        objToPlace.transform.parent = parentFrame.transform;   // Prima era il frame InputManager ora Cloud Data Manger 
         // Add object to the list
         holoObjects.Add(objToPlace);
 
@@ -70,6 +71,9 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
                 childCollider.enabled = true;
             }
         }
+        // make this object child of the anchor one
+        objToPlace.transform.parent = GameObject.Find("SharedMapsManager").transform;
+
         /*
         foreach (GameObject obj in holoObjects)
         {

@@ -29,7 +29,8 @@ public class InputManager : MonoBehaviour
     #region Member Variables
     // Istance of the map to resize it  
     private GameObject suMinimap = null;
-    // Istance of te UI object to resize it as well as the map
+
+    private GameObject ARmarker = null;
 
     //private GameObject UIobject = null;
     private List<GameObject> UIobjects = new List<GameObject>();
@@ -55,8 +56,13 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private SharedMeshManager sharedMeshManager;
 
+    [Tooltip("Reference to the AzureModule to handle the Azure Spatial Anchors")]
+    [SerializeField]
+    private AnchorModuleScript AzureModule;
 
-
+    [Tooltip("Prefab of the AR marker to place")]
+    [SerializeField]
+    private GameObject objToPlaceRef;
 
     private bool toggleMiniMap = false;
 
@@ -110,8 +116,8 @@ public class InputManager : MonoBehaviour
                 //objOriginalTransform.Add(SceneObjPlacer.holoObjects[i].transform.parent);
                 //textObj.text = "Salvato l'origin farme dell Ui Object";
                 //SceneObjPlacer.holoObjects[i].transform.parent = suMinimap.transform;
-                
-                UIobjects.Add(Instantiate(SceneObjPlacer.holoObjects[i]));              
+
+                UIobjects.Add(Instantiate(SceneObjPlacer.holoObjects[i]));
                 UIobjects[i].transform.parent = suMinimap.transform;
                 textObj.text = "After parenting";
                 SceneObjPlacer.holoObjects[i].SetActive(false);
@@ -120,11 +126,11 @@ public class InputManager : MonoBehaviour
             }
         }
     }
-   // cheack if I destroy the suMinimap pbject I will destroy all the UIobjects copies as well. 
+    // cheack if I destroy the suMinimap pbject I will destroy all the UIobjects copies as well. 
 
     private void removeUIObject()
     {
-        if(UIobjects.Count > 0)
+        if (UIobjects.Count > 0)
         {
             for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
             {
@@ -142,10 +148,10 @@ public class InputManager : MonoBehaviour
                 //textObj.text = "parent null";
                 //SceneObjPlacer.holoObjects[i].transform.localScale = new Vector3(10.0f, 10.0f, 10.0f);
                 //textObj.text = "Aggiorate le dimensioni degli UI Obj";
-            }            
+            }
             UIobjects.Clear();
         }
-        
+
 
     }
     #endregion
@@ -161,7 +167,7 @@ public class InputManager : MonoBehaviour
         {
             // Update the transform mutrix with the current position and rotation of the SceneRoot frame w.r.t. the global one
             SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
-            
+
             suMinimap = Instantiate(suManager.SceneRoot);
             suMinimap.name = "Minimap";
 
@@ -189,7 +195,7 @@ public class InputManager : MonoBehaviour
         if (suMinimap != null)
         {
             removeUIObject();
-            DestroyImmediate(suMinimap);           
+            DestroyImmediate(suMinimap);
             suMinimap = null;
         }
         // destroy all objects
@@ -217,7 +223,7 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
-    #region Save And Load Scene
+    #region Save And Load Scene Locally
     /// <summary>
     /// Save the current scene on the device as binary file
     /// </summary>
@@ -238,7 +244,7 @@ public class InputManager : MonoBehaviour
 
     #endregion
 
-    #region Share Map
+    #region Share Map (forse inutile)
     private void SharedMiniMapOn()
     {
         if (suMinimap == null)
@@ -306,6 +312,7 @@ public class InputManager : MonoBehaviour
         suManager.SceneRoot.SetActive(toggleSceenRoot);
     }
     #endregion
+
     #region Azure Servicies
     /// <summary>
     /// Method to upload the current Mesh of the map on the Azure Cloud as binary file
@@ -323,7 +330,7 @@ public class InputManager : MonoBehaviour
     /// </summary>
     public async void downloadMeshFromBLOB()
     {
-        var returnedMesh  = dataManager.DownloadBlob("meshBLOB");
+        var returnedMesh = dataManager.DownloadBlob("meshBLOB");
         byte[] mesh = await returnedMesh;
         textObj.text = "Download mesh correctly";
         sharedMeshManager.LoadMeshByte(mesh);
@@ -331,4 +338,29 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
+    #region Azure Spatial Anchor
+
+    public void shareAnchor()
+    {
+        //AzureModule.StartAzureSession();
+        //textObj.text = "Start Azure session ";
+        AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
+        textObj.text = " Anchor Created ";
+        //AzureModule.ShareAzureAnchorIdToNetwork();
+        //textObj.text = " Anchor Shared ";
+    }
+
+    public void findAnchor()
+    {
+        //AzureModule.StartAzureSession();
+        //textObj.text = "Start Azure session ";
+        AzureModule.FindAzureAnchor();
+        textObj.text = " Anchor Found ";
+        //ARmarker = Instantiate<GameObject>(objToPlaceRef, Vector3.zero, Quaternion.identity);
+        //textObj.text = " Hologram reference instanciated ";
+        //ARmarker.transform.parent = GameObject.Find("SharedMapsManager").transform;
+        //ARmarker.transform.localPosition = Vector3.zero;
+        //textObj.text = " Hologram placed";
+    }
+    #endregion
 }
