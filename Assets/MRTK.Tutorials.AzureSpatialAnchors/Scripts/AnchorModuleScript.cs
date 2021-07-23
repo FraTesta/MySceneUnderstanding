@@ -69,7 +69,8 @@ public class AnchorModuleScript : MonoBehaviour
     #endregion
 
     #region Public Methods
-    public async void StartAzureSession()
+    //public async Task<bool> StartAzureSession()
+    public async Task StartAzureSession()
     {
         Debug.Log("\nAnchorModuleScript.StartAzureSession()");
 
@@ -108,7 +109,7 @@ public class AnchorModuleScript : MonoBehaviour
         Debug.Log("Azure session stopped successfully");
     }
 
-    public async void CreateAzureAnchor(GameObject theObject)
+    public async Task CreateAzureAnchor(GameObject theObject)
     {
         Debug.Log("\nAnchorModuleScript.CreateAzureAnchor()");
 

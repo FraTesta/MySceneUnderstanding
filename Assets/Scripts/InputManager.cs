@@ -163,6 +163,10 @@ public class InputManager : MonoBehaviour
     /// </summary>
     private void MiniMapOn()
     {
+        // If the world mesh is turned of, it will be turned on to visualize the minimap as well
+        if (!suManager.RenderWorldMesh)
+            suManager.RenderWorldMesh = true;
+
         if (suMinimap == null)
         {
             // Update the transform mutrix with the current position and rotation of the SceneRoot frame w.r.t. the global one
@@ -173,7 +177,11 @@ public class InputManager : MonoBehaviour
 
             //addUIobject();
             addUIobjects();
-            suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+
+            // it was oroginally spawned in fornt of the user's view 
+            //suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+            
+            suMinimap.transform.position = GameObject.Find("CloudDataManager").transform.position;
             suMinimap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
             // add the collider component
             suMinimap.AddComponent<MeshCollider>();
@@ -313,7 +321,7 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
-    #region Azure Servicies
+    #region Azure Mesh BLOB
     /// <summary>
     /// Method to upload the current Mesh of the map on the Azure Cloud as binary file
     /// </summary>
@@ -340,27 +348,35 @@ public class InputManager : MonoBehaviour
 
     #region Azure Spatial Anchor
 
-    public void shareAnchor()
+    public async void shareAnchor()
     {
-        //AzureModule.StartAzureSession();
-        //textObj.text = "Start Azure session ";
-        AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
-        textObj.text = " Anchor Created ";
-        //AzureModule.ShareAzureAnchorIdToNetwork();
-        //textObj.text = " Anchor Shared ";
+        await AzureModule.StartAzureSession();
+        await AzureModule.CreateAzureAnchor(GameObject.Find("anchor"));
+        AzureModule.ShareAzureAnchorIdToNetwork();
+        
     }
 
-    public void findAnchor()
+    public async void findAnchor()
     {
-        //AzureModule.StartAzureSession();
-        //textObj.text = "Start Azure session ";
+        AzureModule.GetAzureAnchorIdFromNetwork();
+        await AzureModule.StartAzureSession();
         AzureModule.FindAzureAnchor();
-        textObj.text = " Anchor Found ";
         //ARmarker = Instantiate<GameObject>(objToPlaceRef, Vector3.zero, Quaternion.identity);
         //textObj.text = " Hologram reference instanciated ";
         //ARmarker.transform.parent = GameObject.Find("SharedMapsManager").transform;
         //ARmarker.transform.localPosition = Vector3.zero;
         //textObj.text = " Hologram placed";
     }
+
+    public async void StartSession()
+    {
+        await AzureModule.StartAzureSession();
+    }
+
+    public async void createAnchor()
+    {
+        await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
+    }
+
     #endregion
 }
