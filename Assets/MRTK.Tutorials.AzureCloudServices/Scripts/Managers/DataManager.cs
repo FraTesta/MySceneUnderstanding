@@ -30,6 +30,8 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
         private string partitionKey = "main";
         [SerializeField]
         private bool tryCreateTableOnStart = true;
+
+
         [Header("Blob Settings")]
         [SerializeField]
         private string blockBlobContainerName = "tracked-objects-thumbnails";

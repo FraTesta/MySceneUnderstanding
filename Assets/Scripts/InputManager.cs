@@ -19,8 +19,7 @@ using MRTK.Tutorials.AzureCloudServices.Scripts.Managers;
 public class InputManager : MonoBehaviour
 {
     #region Public Variables
-    [SerializeField]
-    public TextMeshPro textObj = null;
+
 
 
     #endregion
@@ -90,26 +89,26 @@ public class InputManager : MonoBehaviour
     public void increaseRadius()
     {
         suManager.BoundingSphereRadiusInMeters += 5;
-        textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
+
     }
     public void decreaseRadius()
     {
         suManager.BoundingSphereRadiusInMeters -= 5;
-        textObj.text = $"{suManager.BoundingSphereRadiusInMeters:F2}";
+
     }
     #endregion
 
-    #region UI object resize
+     #region UI object resize
 
     /// <summary>
     /// This function attach all UIObject to the MiniMap hologram in order to represent them in the resized map.
     /// </summary>
     private void addUIobjects()
     {
-        textObj.text = "Inside addUIObjects";
+
         if (SceneObjPlacer.holoObjects.Count != 0)
         {
-            textObj.text = "Dentro If";
+
             for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
             {
                 //textObj.text = SceneObjPlacer.holoObjects[i].transform.parent.gameObject.name;
@@ -118,11 +117,10 @@ public class InputManager : MonoBehaviour
                 //SceneObjPlacer.holoObjects[i].transform.parent = suMinimap.transform;
 
                 UIobjects.Add(Instantiate(SceneObjPlacer.holoObjects[i]));
+                UIobjects[i].name = "O";
                 UIobjects[i].transform.parent = suMinimap.transform;
-                textObj.text = "After parenting";
                 SceneObjPlacer.holoObjects[i].SetActive(false);
-                textObj.text = "After Set active";
-                textObj.text = $"{i:F2}";
+                Debug.Log("Placed object: " + i);
             }
         }
     }
@@ -135,12 +133,12 @@ public class InputManager : MonoBehaviour
             for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
             {
                 suMinimap.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
-                textObj.text = "update scale ";
+             
                 var UIObjectWorldFrame = SceneRootTrasnMat * UIobjects[i].transform.localPosition;
                 SceneObjPlacer.holoObjects[i].transform.position = new Vector3(UIObjectWorldFrame.x, UIObjectWorldFrame.y, UIObjectWorldFrame.z);
                 //textObj.text = "update position ";
                 //SceneObjPlacer.holoObjects[i].transform.localRotation = UIobjects[i].transform.localRotation;
-                textObj.text = "update rotation ";
+               
 
                 SceneObjPlacer.holoObjects[i].SetActive(true);
                 DestroyImmediate(UIobjects[i]);
@@ -169,6 +167,7 @@ public class InputManager : MonoBehaviour
 
         if (suMinimap == null)
         {
+
             // Update the transform mutrix with the current position and rotation of the SceneRoot frame w.r.t. the global one
             SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
 
@@ -179,9 +178,9 @@ public class InputManager : MonoBehaviour
             addUIobjects();
 
             // it was oroginally spawned in fornt of the user's view 
-            //suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+            suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
             
-            suMinimap.transform.position = GameObject.Find("CloudDataManager").transform.position;
+            //suMinimap.transform.position = GameObject.Find("CloudDataManager").transform.position;
             suMinimap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
             // add the collider component
             suMinimap.AddComponent<MeshCollider>();
@@ -231,7 +230,7 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
-    #region Save And Load Scene Locally
+    #region Save And Load Scene Locally (non più utile )
     /// <summary>
     /// Save the current scene on the device as binary file
     /// </summary>
@@ -321,29 +320,41 @@ public class InputManager : MonoBehaviour
     }
     #endregion
 
-    #region Azure Mesh BLOB
+    #region Share Map Data BLOB
     /// <summary>
-    /// Method to upload the current Mesh of the map on the Azure Cloud as binary file
+    /// Method to upload the current Map data (ARdata and Mesh) (attached to the SceneRoot Game Object defined in the SharedMapManager script) on the Azure Cloud as binary file
     /// </summary>
-    public async void uploadMeshOnBLOB()
+    public async void uploadMapDataOnBLOB()
     {
-        byte[] mesh = sharedMeshManager.SaveMeshAsByte();
-        textObj.text = "Saved mesh correctly";
-        await dataManager.UploadBlob(mesh, "meshBLOB");
-        textObj.text = "Mesh Saved on Blob";
+        byte[] mesh = sharedMeshManager.MeshAsByte();
+        await dataManager.UploadBlob(mesh, "mesh BLOB");
+        Debug.Log("Mesh uploaded on BLOB storage correctly");
+        byte[] ARdata = sharedMeshManager.ARDataAsByte();
+        await dataManager.UploadBlob(ARdata, "AR data BLOB");
+        Debug.Log("AR data uploaded on BLOB storage correctly");
     }
 
     /// <summary>
-    /// Mthod to download the last mesh uploaded on the Azure BLOB Cloud
+    /// Method to download the last mesh and its relative AR data uploaded on the Azure BLOB Cloud with the name specified below. 
+    /// At the end it will join the current map and the dowloaded one in the Anchor (CloudDataManager) frame location.
     /// </summary>
-    public async void downloadMeshFromBLOB()
+    public async void downloadMapDataFromBLOB()
     {
-        var returnedMesh = dataManager.DownloadBlob("meshBLOB");
+        // first I place the map frame
+        var returnedARData = dataManager.DownloadBlob("AR data BLOB");
+        byte[] ARData = await returnedARData;
+        sharedMeshManager.joinSubMap(ARData);
+        // download and applay the map mesh
+        var returnedMesh = dataManager.DownloadBlob("mesh BLOB");
         byte[] mesh = await returnedMesh;
-        textObj.text = "Download mesh correctly";
         sharedMeshManager.LoadMeshByte(mesh);
-        textObj.text = "Loaded mesh correctly";
     }
+    #endregion
+
+    #region Share Transform BLOB
+
+
+
     #endregion
 
     #region Azure Spatial Anchor

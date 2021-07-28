@@ -1136,7 +1136,7 @@ public class MySUManager : MonoBehaviour
 #else
             Debug.Log("Save on Device is only supported in Universal Windows Applications");
 #endif
-            textObj.text = "Saved Map";
+            
         }
         else
         {
@@ -1179,7 +1179,7 @@ public class MySUManager : MonoBehaviour
         }
         else
         {
-            textObj.text = "sceneBytes is null";
+            
         }
         //}
         return fragmentToReturn;
@@ -1191,13 +1191,13 @@ public class MySUManager : MonoBehaviour
     /// <param name="parallelSceneBytes"></param>
     private void CreateParallelScene(byte[] parallelSceneBytes)
     {
-        textObj.text = "Inside CreateParallelScene";
+       
         Scene parallelScene = null;
         SceneFragment parallelSceneFragment = GetParallelSceneSerialization(parallelSceneBytes);
-        textObj.text = "Serialized the Map";
+        
         SceneFragment[] sceneFragmentsArray = new SceneFragment[1] { parallelSceneFragment };
         parallelScene = Scene.FromFragments(sceneFragmentsArray);
-        textObj.text = "Build the parallel scene";
+        
 
         // eventualmente genero GUID di questa scene 
 
@@ -1235,18 +1235,13 @@ public class MySUManager : MonoBehaviour
                             break;
                         }
                     }
-                    textObj.text = "Display at least one gameObject";
-                    textObj.text = $"{i:F2}";
+
                 }
-                textObj.text = "Displaied all the parallel Scene Objectcts";
+
             }
-            else {
-                textObj.text = "sceneToUnityTransformAsMatrix4x4 is null ";
-            }
+
         }
-        else {
-            textObj.text = "parallel scene is null";
-        }
+
     }
     // Task che permette di caricare una scena salvata come file.bin
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -1257,30 +1252,26 @@ public class MySUManager : MonoBehaviour
 
         string fileName = "map.bytes";
 
-        textObj.text = "Before open the file";
+
 
 #if WINDOWS_UWP
                 var folder = WindowsStorage.ApplicationData.Current.LocalFolder;
                 //var folder = KnownFolders.Objects3D;
-                textObj.text = folder.Path;
+
                 StorageFile file = await folder.GetFileAsync(fileName);  
-                textObj.text = "File Found";
+
                 IBuffer buffer = await FileIO.ReadBufferAsync(file); 
-                textObj.text = "Buffer Loaded";
+
 
                 DataReader dataReader = DataReader.FromBuffer(buffer);
-                textObj.text = "DataReader.FromBuffer";
+
                 OnDeviceBytes = new byte[buffer.Length];
                 dataReader.ReadBytes(OnDeviceBytes);
-                textObj.text = "reconverted on bytes";
-                if (OnDeviceBytes != null)
-                {
-                    CreateParallelScene(OnDeviceBytes);
-                }
-                else
-                {
-                    textObj.text = "OnDeviceBytes is null";
-                }
+                //textObj.text = "reconverted on bytes";
+
+                CreateParallelScene(OnDeviceBytes);
+                
+
 
 #else
         Debug.Log("Load on Device is only supported in Universal Windows Applications");
