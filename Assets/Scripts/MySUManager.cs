@@ -152,9 +152,6 @@ public class MySUManager : MonoBehaviour
     [Tooltip("When enabled, requests observed and inferred regions for scene objects. When disabled, requests only the observed regions for scene objects.")]
     public bool RequestInferredRegions = true;
     // aggiunto io 
-    [Header("Shared Map Settings")]
-    [Tooltip("Reference frame of the paralel map.")]
-    public GameObject ParallelSceneRoot = null;
 
     [SerializeField]
     public TextMeshPro textObj = null;
@@ -496,14 +493,14 @@ public class MySUManager : MonoBehaviour
 
         // This gameobject will hold all the geometry that represents the Scene Understanding Object
         GameObject unityParentHolderObject = new GameObject(suObject.Kind.ToString());
-        if (sharedMap == true)
+        /*if (sharedMap == true)
         {
             unityParentHolderObject.transform.parent = ParallelSceneRoot.transform;
         }
         else
-        {
+        {*/
             unityParentHolderObject.transform.parent = SceneRoot.transform;
-        }
+        //}
         // Scene Understanding uses a Right Handed Coordinate System and Unity uses a left handed one, convert.
         System.Numerics.Matrix4x4 converted4x4LocationMatrix = ConvertRightHandedMatrix4x4ToLeftHanded(suObject.GetLocationAsMatrix());
         // From the converted Matrix pass its values into the unity transform (Numerics -> Unity.Transform)
@@ -1185,64 +1182,7 @@ public class MySUManager : MonoBehaviour
         return fragmentToReturn;
     }
 
-    /// <summary>
-    /// The Equivalent Method of the DisplayDataRoutine for the parallel scene 
-    /// </summary>
-    /// <param name="parallelSceneBytes"></param>
-    private void CreateParallelScene(byte[] parallelSceneBytes)
-    {
-       
-        Scene parallelScene = null;
-        SceneFragment parallelSceneFragment = GetParallelSceneSerialization(parallelSceneBytes);
-        
-        SceneFragment[] sceneFragmentsArray = new SceneFragment[1] { parallelSceneFragment };
-        parallelScene = Scene.FromFragments(sceneFragmentsArray);
-        
 
-        // eventualmente genero GUID di questa scene 
-
-        if (parallelScene != null)
-        {
-            // Retrieve a transformation matrix that will allow us orient the Scene Understanding Objects into
-            // their correct corresponding position in the unity world
-            System.Numerics.Matrix4x4? sceneToUnityTransformAsMatrix4x4 = GetSceneToUnityTransformAsMatrix4x4(parallelScene);
-
-            if (sceneToUnityTransformAsMatrix4x4 != null)
-            {
-                // If there was previously a scene displayed in the game world, destroy it
-                // to avoid overlap with the new scene about to be displayed
-                //DestroyAllGameObjectsUnderParent(SceneRoot.transform);
-                // Allow from one frame to yield the coroutine back to the main thread
-                //yield return null;
-
-                // Using the transformation matrix generated above, port its values into the tranform of the scene root (Numerics.matrix -> GameObject.Transform)
-                SetUnityTransformFromMatrix4x4(ParallelSceneRoot.transform, sceneToUnityTransformAsMatrix4x4.Value);
-
-
-                // After the scene has been oriented, loop through all the scene objects and
-                // generate their corresponding Unity Object
-                IEnumerable<SceneObject> sceneObjects = parallelScene.SceneObjects;
-
-                int i = 0;
-                foreach (SceneObject sceneObject in sceneObjects)
-                {
-                    if (DisplaySceneObject(sceneObject, true))
-                    {
-                        if (++i % NumberOfSceneObjectsToLoadPerFrame == 0)
-                        {
-                            // Allow a certain number of objects to load before yielding back to main thread
-                            //yield return null;
-                            break;
-                        }
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
     // Task che permette di caricare una scena salvata come file.bin
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     public async Task LoadByteFromDiskAsync()
@@ -1268,9 +1208,6 @@ public class MySUManager : MonoBehaviour
                 OnDeviceBytes = new byte[buffer.Length];
                 dataReader.ReadBytes(OnDeviceBytes);
                 //textObj.text = "reconverted on bytes";
-
-                CreateParallelScene(OnDeviceBytes);
-                
 
 
 #else

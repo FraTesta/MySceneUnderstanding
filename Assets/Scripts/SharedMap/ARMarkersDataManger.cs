@@ -1,4 +1,8 @@
-﻿using System.Collections;
+﻿/*
+ * Script that allows to serialize transformations of game objects (position and orientation)
+ */
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -41,7 +45,7 @@ namespace ARMarkersDataManager
         {
             this.rotX = orientation.eulerAngles.x;
             this.rotY = orientation.eulerAngles.y;
-            this.rotY = orientation.eulerAngles.z;
+            this.rotZ = orientation.eulerAngles.z;
         }
 
         /*public override bool Equals(object obj)
@@ -73,9 +77,7 @@ namespace ARMarkersDataManager
 
         public Quaternion GetAchorOrientation()
         {
-            Quaternion rot = Quaternion.identity;
-            rot.eulerAngles = new Vector3(rotX, rotY, rotZ);
-            return rot;
+            return Quaternion.Euler(rotX, rotY, rotZ);
         }
         /*
         public static bool operator ==(Vector3S a, Vector3S b)

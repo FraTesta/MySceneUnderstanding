@@ -10,6 +10,7 @@ using Microsoft.MixedReality.Toolkit.UI;
 using TMPro;
 using Microsoft.MixedReality.Toolkit.Input;
 using MRTK.Tutorials.AzureCloudServices.Scripts.Managers;
+using B83.MeshTools;
 
 
 #if WINDOWS_UWP
@@ -26,7 +27,11 @@ public class InputManager : MonoBehaviour
 
 
     #region Member Variables
-    // Istance of the map to resize it  
+
+
+
+    [Tooltip("Frame of the resized map.")]
+    [SerializeField]
     private GameObject suMinimap = null;
 
     private GameObject ARmarker = null;
@@ -63,6 +68,11 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private GameObject objToPlaceRef;
 
+    [Tooltip("Minimap material.")]
+    [SerializeField]
+    private Material MinimapMaterial = null;
+
+
     private bool toggleMiniMap = false;
 
     private bool toggleSceenRoot = false;
@@ -72,6 +82,7 @@ public class InputManager : MonoBehaviour
     {
         suManager.RenderWorldMesh = !suManager.RenderWorldMesh;
         await suManager.DisplayDataAsync();
+        Debug.Log("MESH WORLD TOGGLED ");
     }
 
     public async void togglePlatform()
@@ -159,8 +170,11 @@ public class InputManager : MonoBehaviour
     /// <summary>
     /// Turns the mini map on.
     /// </summary>
-    private void MiniMapOn()
+    public void MiniMapOn()
     {
+        // DA RIMETTERE PRIVATE COME METODO 
+
+
         // If the world mesh is turned of, it will be turned on to visualize the minimap as well
         if (!suManager.RenderWorldMesh)
             suManager.RenderWorldMesh = true;
@@ -172,16 +186,25 @@ public class InputManager : MonoBehaviour
             SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
 
             suMinimap = Instantiate(suManager.SceneRoot);
-            suMinimap.name = "Minimap";
+            suMinimap.name = "suMinimap";
+            
+            // fare copia dell'ancora 
+            // rendere suMinimap figlia e unire in un unico game object 
+            // elminare su minimap
+            // poi con nella joinMaps function posso usare questo medodo prima e unire la mappa scaricata alla mappa appena generata perchè il suo frame sarà quello dell'ancora 
 
             //addUIobject();
             addUIobjects();
 
             // it was oroginally spawned in fornt of the user's view 
             suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
-            
+            //suMinimap.transform.parent = GameObject.Find("CloudDataManager").transform;
+
             //suMinimap.transform.position = GameObject.Find("CloudDataManager").transform.position;
             suMinimap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+
+
+
             // add the collider component
             suMinimap.AddComponent<MeshCollider>();
 
@@ -194,6 +217,95 @@ public class InputManager : MonoBehaviour
         }
     }
 
+    private void miniMapAnchor()
+    {
+        // If the world mesh is turned of, it will be turned on to visualize the minimap as well
+        if (!suManager.RenderWorldMesh)
+        {
+            suManager.RenderWorldMesh = true;
+            Debug.Log("\n World mesh enabled from miniMap");
+        }
+            suMinimap = new GameObject("suMinimap");
+  
+
+            // Update the transform mutrix with the current position and rotation of the SceneRoot frame w.r.t. the global one
+            SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
+
+            suManager.SceneRoot.transform.parent = GameObject.Find("CloudDataManager").transform;
+            Vector3 sceneRootPos = suManager.SceneRoot.transform.localPosition;
+            Quaternion sceneRootRot = suManager.SceneRoot.transform.localRotation;
+            suManager.SceneRoot.transform.parent = null;
+
+            Mesh mesh = sharedMeshManager.combineMesh(suManager.SceneRoot, GameObject.Find("CloudDataManager"));
+
+
+            if (suMinimap.GetComponent<MeshFilter>() == false)
+            {
+                suMinimap.AddComponent<MeshFilter>();
+                Debug.Log("MeshFilter added");
+            }
+            if (suMinimap.GetComponent<MeshRenderer>() == false)
+            {
+                suMinimap.AddComponent<MeshRenderer>();
+                Debug.Log("MeshRender added");
+            }
+
+            MinimapMaterial.SetColor("_Color", Color.blue);
+            suMinimap.transform.GetComponent<MeshRenderer>().material = MinimapMaterial;
+            Debug.Log("Mesh Render set");
+
+            if (mesh == null)
+                        Debug.LogError("The combined mesh is null!!!");
+
+
+            suMinimap.transform.parent = GameObject.Find("CloudDataManager").transform;
+            suMinimap.transform.localPosition = Vector3.zero;
+            suMinimap.transform.localRotation = Quaternion.identity;
+            suMinimap.transform.GetComponent<MeshFilter>().mesh = mesh;
+            Debug.Log("Cobined mesh added");
+            suMinimap.transform.localPosition = sceneRootPos;
+            suMinimap.transform.localRotation = sceneRootRot;
+            Debug.Log("Minimap located successfully");
+
+
+
+        //suMinimap = Instantiate(suManager.SceneRoot);
+
+        //suMinimap.name = "Minimap";
+
+        // fare copia dell'ancora 
+        // rendere suMinimap figlia e unire in un unico game object 
+        // elminare su minimap
+        // poi con nella joinMaps function posso usare questo medodo prima e unire la mappa scaricata alla mappa appena generata perchè il suo frame sarà quello dell'ancora 
+
+        //addUIobject();
+
+        // it was oroginally spawned in fornt of the user's view 
+        //suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+
+
+
+
+        //suMinimap.transform.position = GameObject.Find("CloudDataManager").transform.position;
+
+        // SCALE
+        /*float scale = 0.5f;
+             Vector3 localMapPos = suMinimap.transform.localPosition;
+             suMinimap.transform.localPosition = new Vector3(localMapPos.x * scale, localMapPos.y * scale, localMapPos.z * scale);
+             suMinimap.transform.localScale = new Vector3(scale, scale, scale); 
+             Debug.Log("resized\n");
+             // add the collider component
+             //suMinimap.AddComponent<MeshCollider>();
+
+             //Rigidbody rb = suMinimap.AddComponent<Rigidbody>();
+             // add the component Object Manipulator Grapable
+             //suMinimap.AddComponent<ObjectManipulator>();
+             //suMinimap.AddComponent<NearInteractionGrabbable>();*/
+        suManager.SceneRoot.SetActive(false);
+
+        
+    }
+
     /// <summary>
     /// Turns the mini map off.
     /// </summary>
@@ -203,10 +315,12 @@ public class InputManager : MonoBehaviour
         {
             removeUIObject();
             DestroyImmediate(suMinimap);
+            //suMinimap.transform.parent = null;
             suMinimap = null;
         }
         // destroy all objects
         suManager.SceneRoot.SetActive(true);
+        Debug.Log("Mesh active");
     }
 
 
@@ -218,7 +332,8 @@ public class InputManager : MonoBehaviour
         toggleMiniMap = !toggleMiniMap;
         if (toggleMiniMap)
         {
-            MiniMapOn();
+            //MiniMapOn();
+            miniMapAnchor();
             //Resize UISceneObject 
             //resizeUIObject();
         }
@@ -227,6 +342,11 @@ public class InputManager : MonoBehaviour
             MiniMapOff();
             //unresizeUIObject();
         }
+    }
+
+    public void resizeLoadedMap()
+    {
+        GameObject.Find("LoadedMap").transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
     }
     #endregion
 
@@ -252,7 +372,7 @@ public class InputManager : MonoBehaviour
     #endregion
 
     #region Share Map (forse inutile)
-    private void SharedMiniMapOn()
+   /*private void SharedMiniMapOn()
     {
         if (suMinimap == null)
         {
@@ -306,7 +426,7 @@ public class InputManager : MonoBehaviour
             SharedMiniMapOff();
             //unresizeUIObject();
         }
-    }
+    }*/
     #endregion
 
     #region Utility Function
@@ -326,13 +446,32 @@ public class InputManager : MonoBehaviour
     /// </summary>
     public async void uploadMapDataOnBLOB()
     {
-        byte[] mesh = sharedMeshManager.MeshAsByte();
-        await dataManager.UploadBlob(mesh, "mesh BLOB");
-        Debug.Log("Mesh uploaded on BLOB storage correctly");
-        byte[] ARdata = sharedMeshManager.ARDataAsByte();
+        Debug.Log("Start uploading BLOB data\n");
+        byte[] ARdata = sharedMeshManager.ARDataAsByte(suManager.SceneRoot, GameObject.Find("CloudDataManager"));
         await dataManager.UploadBlob(ARdata, "AR data BLOB");
-        Debug.Log("AR data uploaded on BLOB storage correctly");
+        Debug.Log("AR data uploaded on BLOB storage successfully");
+        byte[] mesh = sharedMeshManager.combineMeshAsByte(suManager.SceneRoot, GameObject.Find("CloudDataManager"));
+        await dataManager.UploadBlob(mesh, "mesh BLOB");
+        Debug.Log("Mesh uploaded on BLOB storage successfully");
+
     }
+
+    /*public async void uploadMapDataOnBLOB()
+    {
+        Debug.Log("START UPLOADING MAP");
+        byte[] meshByte = sharedMeshManager.combineMeshAsByte(suManager.SceneRoot);
+        if (meshByte == null)
+        {
+            Debug.LogError("Serialized mesh is null"); 
+        }
+        else { 
+            Debug.Log("Mesh serialized properly"); 
+        }
+        
+        await dataManager.UploadBlob(meshByte, "mesh BLOB");
+        Debug.Log("Mesh uploaded on BLOB storage correctly");
+    }*/
+
 
     /// <summary>
     /// Method to download the last mesh and its relative AR data uploaded on the Azure BLOB Cloud with the name specified below. 
@@ -340,29 +479,55 @@ public class InputManager : MonoBehaviour
     /// </summary>
     public async void downloadMapDataFromBLOB()
     {
-        // first I place the map frame
+        Debug.Log("Start downloading BLOB data\n");
+        // download AR markers data
         var returnedARData = dataManager.DownloadBlob("AR data BLOB");
-        byte[] ARData = await returnedARData;
-        sharedMeshManager.joinSubMap(ARData);
-        // download and applay the map mesh
+        byte[] ARDataByte = await returnedARData;
+        if (ARDataByte == null)
+        {
+            Debug.Log("ERROR: AR data downloaded wrong!!!");
+        }
+        else {
+            Debug.Log("AR data downloaded properly");
+        }
+        // download mesh 
+        var returnedMesh = dataManager.DownloadBlob("mesh BLOB");
+        byte[] meshByte = await returnedMesh;
+        if (meshByte == null)
+        {
+            Debug.Log("ERROR: mesh data downloaded wrong!!!");
+        }
+        else
+        {
+            Debug.Log("Mesh data downloaded properly");
+        }
+        sharedMeshManager.LocateSubMap(ARDataByte, meshByte, GameObject.Find("CloudDataManager"));
+        Debug.Log("SUBMAP LOCATED SUCCESSFULLY \n");
+
+
+    }
+
+    /*public async void downloadMapDataFromBLOB()
+    {
+        Debug.Log("Start download BLOB data\n");
+        // first I place the map frame
+
         var returnedMesh = dataManager.DownloadBlob("mesh BLOB");
         byte[] mesh = await returnedMesh;
-        sharedMeshManager.LoadMeshByte(mesh);
-    }
+        Debug.Log("Map Mesh downloaded correctly\n");
+        sharedMeshManager.locateMap(mesh);
+        Debug.Log("MAP LOCATED");
+    }*/
     #endregion
 
-    #region Share Transform BLOB
-
-
-
-    #endregion
 
     #region Azure Spatial Anchor
 
     public async void shareAnchor()
     {
         await AzureModule.StartAzureSession();
-        await AzureModule.CreateAzureAnchor(GameObject.Find("anchor"));
+        //await AzureModule.CreateAzureAnchor(GameObject.Find("anchor"));
+        await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
         AzureModule.ShareAzureAnchorIdToNetwork();
         
     }
@@ -390,4 +555,31 @@ public class InputManager : MonoBehaviour
     }
 
     #endregion
+
+    /// <summary>
+    /// To join the downloaded map (LoadedMap GameObject) with the minimap (suMiniMap )
+    /// </summary>
+    public void joinMap()
+    {
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.transform.localScale = new Vector3(0.08f, 0.08f, 0.08f);
+        cube.transform.position = GameObject.Find("CloudDataManager").transform.position;
+        cube.transform.rotation = GameObject.Find("CloudDataManager").transform.rotation;
+        //cube.transform.localPosition = Vector3.zero;
+
+        cube.AddComponent<MeshCollider>();
+        GameObject.Find("Cube").AddComponent<ObjectManipulator>();
+        GameObject.Find("Cube").AddComponent<NearInteractionGrabbable>();
+        Debug.Log("Cube in achor position");
+
+        GameObject.Find("LoadedMap").transform.parent = cube.transform;
+        Debug.Log("Loaded map anchired to the cube");
+
+        miniMapAnchor(); // da rinominare come currentMapAnchorReference e rimettere minimapOn vecchio 
+        suMinimap.transform.parent = cube.transform;
+
+        cube.transform.parent = null;
+        cube.transform.localScale = new Vector3(0.008f, 0.008f, 0.008f);
+    }
+
 }
