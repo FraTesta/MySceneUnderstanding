@@ -55,7 +55,7 @@ public class SharedMeshManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Combine all separate mesh pieces attached to the SceneRoot Game Object into a single mesh component
+    /// Combine all separate mesh pieces attached to the SceneRoot Game Object into a single mesh component. Please notice that the root must be an empty gameObject
     /// </summary>
     /// <returns></returns>
     public Mesh combineMesh(GameObject root, GameObject anchor)
@@ -118,7 +118,7 @@ public class SharedMeshManager : MonoBehaviour
 
 
     /// <summary>
-    /// Combine all peaces of mesh of the root, and return a byte array containing its serialization
+    /// Combine all peaces of mesh of the root, and return a byte array containing its serialization. Please notice that the root must be an empty gameObject
     /// </summary>
     /// <param name="root"></param>
     /// <returns></returns>

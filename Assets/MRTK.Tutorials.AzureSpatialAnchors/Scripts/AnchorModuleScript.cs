@@ -126,7 +126,7 @@ public class AnchorModuleScript : MonoBehaviour
         CloudSpatialAnchor localCloudAnchor = new CloudSpatialAnchor();
 
         // Now we set the local cloud anchor's position to the native XR anchor's position
-        localCloudAnchor.LocalAnchor = theObject.FindNativeAnchor().GetPointer();
+        localCloudAnchor.LocalAnchor = theObject.FindNativeAnchor().GetPointer(); 
 
         // Check to see if we got the local XR anchor pointer
         if (localCloudAnchor.LocalAnchor == IntPtr.Zero)
@@ -491,5 +491,30 @@ public class AnchorModuleScript : MonoBehaviour
 
     public delegate void DeleteASAAnchorDelegate();
     public event DeleteASAAnchorDelegate OnDeleteASAAnchor;
+
+    public void LocateNearByAnchors(CloudSpatialAnchor anchor)
+    {
+        if (anchor == null)
+            anchor = currentCloudAnchor;
+
+        AnchorLocateCriteria anchorLocateCriteria = new AnchorLocateCriteria();
+
+
+        NearAnchorCriteria nearAnchorCriteria = new NearAnchorCriteria();
+        nearAnchorCriteria.SourceAnchor = anchor;
+        anchorLocateCriteria.NearAnchor = nearAnchorCriteria;
+
+        if ((cloudManager != null) && (cloudManager.Session != null))
+        {
+            currentWatcher = cloudManager.Session.CreateWatcher(anchorLocateCriteria);
+            Debug.Log("Watcher created");
+            Debug.Log("Looking for Azure anchor... please wait...");
+        }
+        else
+        {
+            Debug.Log("Attempt to create watcher failed, no session exists");
+            currentWatcher = null;
+        }
+    }
     #endregion
 }

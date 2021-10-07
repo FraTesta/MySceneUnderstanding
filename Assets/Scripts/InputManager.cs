@@ -34,6 +34,8 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private GameObject suMinimap = null;
 
+    private GameObject anchorMap = null;
+
     private GameObject ARmarker = null;
 
     //private GameObject UIobject = null;
@@ -68,9 +70,17 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private GameObject objToPlaceRef;
 
-    [Tooltip("Minimap material.")]
+    [Tooltip("Minimap material")]
     [SerializeField]
     private Material MinimapMaterial = null;
+
+    [Tooltip("Joined map material")]
+    [SerializeField]
+    private Material joinedMapMaterial = null;
+
+    [Tooltip("Goal Anchor")]
+    [SerializeField]
+    private WaypointNavigation goalAnchor = null;
 
 
     private bool toggleMiniMap = false;
@@ -217,94 +227,7 @@ public class InputManager : MonoBehaviour
         }
     }
 
-    private void miniMapAnchor()
-    {
-        // If the world mesh is turned of, it will be turned on to visualize the minimap as well
-        if (!suManager.RenderWorldMesh)
-        {
-            suManager.RenderWorldMesh = true;
-            Debug.Log("\n World mesh enabled from miniMap");
-        }
-            suMinimap = new GameObject("suMinimap");
-  
-
-            // Update the transform mutrix with the current position and rotation of the SceneRoot frame w.r.t. the global one
-            SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
-
-            suManager.SceneRoot.transform.parent = GameObject.Find("CloudDataManager").transform;
-            Vector3 sceneRootPos = suManager.SceneRoot.transform.localPosition;
-            Quaternion sceneRootRot = suManager.SceneRoot.transform.localRotation;
-            suManager.SceneRoot.transform.parent = null;
-
-            Mesh mesh = sharedMeshManager.combineMesh(suManager.SceneRoot, GameObject.Find("CloudDataManager"));
-
-
-            if (suMinimap.GetComponent<MeshFilter>() == false)
-            {
-                suMinimap.AddComponent<MeshFilter>();
-                Debug.Log("MeshFilter added");
-            }
-            if (suMinimap.GetComponent<MeshRenderer>() == false)
-            {
-                suMinimap.AddComponent<MeshRenderer>();
-                Debug.Log("MeshRender added");
-            }
-
-            MinimapMaterial.SetColor("_Color", Color.blue);
-            suMinimap.transform.GetComponent<MeshRenderer>().material = MinimapMaterial;
-            Debug.Log("Mesh Render set");
-
-            if (mesh == null)
-                        Debug.LogError("The combined mesh is null!!!");
-
-
-            suMinimap.transform.parent = GameObject.Find("CloudDataManager").transform;
-            suMinimap.transform.localPosition = Vector3.zero;
-            suMinimap.transform.localRotation = Quaternion.identity;
-            suMinimap.transform.GetComponent<MeshFilter>().mesh = mesh;
-            Debug.Log("Cobined mesh added");
-            suMinimap.transform.localPosition = sceneRootPos;
-            suMinimap.transform.localRotation = sceneRootRot;
-            Debug.Log("Minimap located successfully");
-
-
-
-        //suMinimap = Instantiate(suManager.SceneRoot);
-
-        //suMinimap.name = "Minimap";
-
-        // fare copia dell'ancora 
-        // rendere suMinimap figlia e unire in un unico game object 
-        // elminare su minimap
-        // poi con nella joinMaps function posso usare questo medodo prima e unire la mappa scaricata alla mappa appena generata perchè il suo frame sarà quello dell'ancora 
-
-        //addUIobject();
-
-        // it was oroginally spawned in fornt of the user's view 
-        //suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
-
-
-
-
-        //suMinimap.transform.position = GameObject.Find("CloudDataManager").transform.position;
-
-        // SCALE
-        /*float scale = 0.5f;
-             Vector3 localMapPos = suMinimap.transform.localPosition;
-             suMinimap.transform.localPosition = new Vector3(localMapPos.x * scale, localMapPos.y * scale, localMapPos.z * scale);
-             suMinimap.transform.localScale = new Vector3(scale, scale, scale); 
-             Debug.Log("resized\n");
-             // add the collider component
-             //suMinimap.AddComponent<MeshCollider>();
-
-             //Rigidbody rb = suMinimap.AddComponent<Rigidbody>();
-             // add the component Object Manipulator Grapable
-             //suMinimap.AddComponent<ObjectManipulator>();
-             //suMinimap.AddComponent<NearInteractionGrabbable>();*/
-        suManager.SceneRoot.SetActive(false);
-
-        
-    }
+   
 
     /// <summary>
     /// Turns the mini map off.
@@ -332,8 +255,7 @@ public class InputManager : MonoBehaviour
         toggleMiniMap = !toggleMiniMap;
         if (toggleMiniMap)
         {
-            //MiniMapOn();
-            miniMapAnchor();
+            MiniMapOn();
             //Resize UISceneObject 
             //resizeUIObject();
         }
@@ -519,7 +441,7 @@ public class InputManager : MonoBehaviour
         Debug.Log("MAP LOCATED");
     }*/
     #endregion
-
+     
 
     #region Azure Spatial Anchor
 
@@ -528,6 +450,7 @@ public class InputManager : MonoBehaviour
         await AzureModule.StartAzureSession();
         //await AzureModule.CreateAzureAnchor(GameObject.Find("anchor"));
         await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
+        //await AzureModule.CreateAzureAnchor(GameObject.Find("Anchor2"));
         AzureModule.ShareAzureAnchorIdToNetwork();
         
     }
@@ -554,32 +477,140 @@ public class InputManager : MonoBehaviour
         await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
     }
 
+    public void findSecondAnchor()
+    {
+        AzureModule.FindAzureAnchor();
+    }
+
     #endregion
+
+
+    #region join local maps
+    /// <summary>
+    /// make a copy of the current Scene (map), combine its mesh components into a single one and anchor it to the current spactial anchor 
+    /// </summary>
+
+    private void mapAnchorReference()
+    {
+        // If the world mesh is turned of, it will be turned on to visualize the minimap as well
+        if (suManager.RenderWorldMesh == false)
+        {
+            suManager.RenderWorldMesh = true;
+            Debug.Log("\n World mesh enabled from map");
+        }
+        anchorMap = new GameObject("anchorMap");
+
+
+        // Update the transform mutrix with the current position and rotation of the SceneRoot frame w.r.t. the global one
+        SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
+
+        suManager.SceneRoot.transform.parent = GameObject.Find("CloudDataManager").transform;
+        Vector3 sceneRootPos = suManager.SceneRoot.transform.localPosition;
+        Quaternion sceneRootRot = suManager.SceneRoot.transform.localRotation;
+        suManager.SceneRoot.transform.parent = null;
+
+        Mesh mesh = sharedMeshManager.combineMesh(suManager.SceneRoot, GameObject.Find("CloudDataManager"));
+
+
+        if (anchorMap.GetComponent<MeshFilter>() == false)
+        {
+            anchorMap.AddComponent<MeshFilter>();
+            Debug.Log("MeshFilter added");
+        }
+        if (anchorMap.GetComponent<MeshRenderer>() == false)
+        {
+            anchorMap.AddComponent<MeshRenderer>();
+            Debug.Log("MeshRender added");
+        }
+
+        MinimapMaterial.SetColor("_Color", Color.blue);
+        anchorMap.transform.GetComponent<MeshRenderer>().material = MinimapMaterial;
+        Debug.Log("Mesh Render set");
+
+        if (mesh == null)
+            Debug.LogError("The combined mesh is null!!!");
+
+
+        anchorMap.transform.parent = GameObject.Find("CloudDataManager").transform;
+        anchorMap.transform.localPosition = Vector3.zero;
+        anchorMap.transform.localRotation = Quaternion.identity;
+        anchorMap.transform.GetComponent<MeshFilter>().mesh = mesh;
+        Debug.Log("Cobined mesh added");
+        anchorMap.transform.localPosition = sceneRootPos;
+        anchorMap.transform.localRotation = sceneRootRot;
+        Debug.Log("Minimap located successfully");
+
+        suManager.SceneRoot.SetActive(false);
+    }
 
     /// <summary>
     /// To join the downloaded map (LoadedMap GameObject) with the minimap (suMiniMap )
     /// </summary>
     public void joinMap()
     {
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.transform.localScale = new Vector3(0.08f, 0.08f, 0.08f);
-        cube.transform.position = GameObject.Find("CloudDataManager").transform.position;
-        cube.transform.rotation = GameObject.Find("CloudDataManager").transform.rotation;
+        //GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        //cube.transform.localScale = new Vector3(0.08f, 0.08f, 0.08f);
+        GameObject joinMaps = new GameObject("joinMaps");
+        joinMaps.transform.position = GameObject.Find("CloudDataManager").transform.position;
+        joinMaps.transform.rotation = GameObject.Find("CloudDataManager").transform.rotation;
         //cube.transform.localPosition = Vector3.zero;
 
-        cube.AddComponent<MeshCollider>();
-        GameObject.Find("Cube").AddComponent<ObjectManipulator>();
-        GameObject.Find("Cube").AddComponent<NearInteractionGrabbable>();
         Debug.Log("Cube in achor position");
 
-        GameObject.Find("LoadedMap").transform.parent = cube.transform;
+        GameObject.Find("LoadedMap").transform.parent = joinMaps.transform;
         Debug.Log("Loaded map anchired to the cube");
 
-        miniMapAnchor(); // da rinominare come currentMapAnchorReference e rimettere minimapOn vecchio 
-        suMinimap.transform.parent = cube.transform;
+        if (anchorMap == null)
+            mapAnchorReference(); 
+        anchorMap.transform.parent = joinMaps.transform;
 
-        cube.transform.parent = null;
-        cube.transform.localScale = new Vector3(0.008f, 0.008f, 0.008f);
+        joinMaps.transform.parent = null;
+        joinMaps.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);        
+
     }
 
+    /// <summary>
+    /// Combine the previusly joined maps
+    /// </summary>
+    public void combineSubMaps()
+    {
+        GameObject combinedJoinMaps = new GameObject("combinedJoinMaps");
+        GameObject joinMaps = GameObject.Find("joinMaps");
+
+        Mesh mesh = sharedMeshManager.combineMesh(joinMaps, GameObject.Find("CloudDataManager"));
+
+        if (combinedJoinMaps.GetComponent<MeshFilter>() == false)
+        {
+            combinedJoinMaps.AddComponent<MeshFilter>();
+            Debug.Log("MeshFilter added");
+        }
+        if (combinedJoinMaps.GetComponent<MeshRenderer>() == false)
+        {
+            combinedJoinMaps.AddComponent<MeshRenderer>();
+            Debug.Log("MeshRender added");
+        }
+
+        combinedJoinMaps.transform.GetComponent<MeshRenderer>().material = joinedMapMaterial;
+        Debug.Log("Mesh Render set");
+
+        if (mesh == null)
+            Debug.LogError("The combined mesh is null!!!");
+
+        combinedJoinMaps.transform.GetComponent<MeshFilter>().mesh = mesh;
+        combinedJoinMaps.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+        combinedJoinMaps.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+        DestroyImmediate(joinMaps);
+        combinedJoinMaps.AddComponent<MeshCollider>();
+        combinedJoinMaps.AddComponent<ObjectManipulator>();
+        combinedJoinMaps.AddComponent<NearInteractionGrabbable>();
+    }
+    #endregion
+
+    #region Navigation
+
+    /*public void findSecondAnchor()
+    {
+        AzureModule.LocateNearByAnchors();
+    }*/
+    #endregion
 }

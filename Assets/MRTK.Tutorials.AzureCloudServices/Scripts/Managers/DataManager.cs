@@ -71,7 +71,7 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
                 }
                 catch (StorageException ex)
                 {
-                    Debug.LogError("Failed to connect with Azure Storage.\nIf you are running with the default storage emulator configuration, please make sure you have started the storage emulator.");
+                    Debug.LogError("Failed to connect with Azure Storage (Table).\nIf you are running with the default storage emulator configuration, please make sure you have started the storage emulator.");
                     Debug.LogException(ex);
                     onDataManagerInitFailed?.Invoke();
                 }
@@ -90,7 +90,7 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
                 }
                 catch (StorageException ex)
                 {
-                    Debug.LogError("Failed to connect with Azure Storage.\nIf you are running with the default storage emulator configuration, please make sure you have started the storage emulator.");
+                    Debug.LogError("Failed to connect with Azure Storage (BLOB).\nIf you are running with the default storage emulator configuration, please make sure you have started the storage emulator.");
                     Debug.LogException(ex);
                     onDataManagerInitFailed?.Invoke();
                 }
