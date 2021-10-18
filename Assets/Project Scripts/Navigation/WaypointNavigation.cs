@@ -23,9 +23,12 @@ public class WaypointNavigation : MonoBehaviour
     private CloudSpatialAnchorWatcher currentWatcher;
     private CloudSpatialAnchor currentCloudAnchor;
 
+    private AnchorLocateCriteria anchorLocateCriteria = new AnchorLocateCriteria();
+
     private void Start()
     {
         cloudManager = GetComponent<SpatialAnchorManager>();
+        SetGraphEnabled(true);
     }
 
     void OnDestroy()
@@ -40,6 +43,13 @@ public class WaypointNavigation : MonoBehaviour
             currentWatcher.Stop();
             currentWatcher = null;
         }
+    }
+
+    protected void SetGraphEnabled(bool UseGraph, bool JustGraph = false)
+    {
+        anchorLocateCriteria.Strategy = UseGraph ?
+                                        (JustGraph ? LocateStrategy.Relationship : LocateStrategy.AnyStrategy) :
+                                        LocateStrategy.VisualInformation;
     }
 
     public async Task CreateAzureAnchor(GameObject theObject)
@@ -120,11 +130,13 @@ public class WaypointNavigation : MonoBehaviour
 
     public void LocateNearByAnchors(CloudSpatialAnchor anchor)
     {
-        AnchorLocateCriteria anchorLocateCriteria = new AnchorLocateCriteria();
+        
         
 
         NearAnchorCriteria nearAnchorCriteria = new NearAnchorCriteria();
         nearAnchorCriteria.SourceAnchor = anchor;
+        nearAnchorCriteria.DistanceInMeters = 10;
+        nearAnchorCriteria.MaxResultCount = 2; // max anchor to find
         anchorLocateCriteria.NearAnchor = nearAnchorCriteria;
         
         if ((cloudManager != null) && (cloudManager.Session != null))

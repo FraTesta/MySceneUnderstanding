@@ -10,7 +10,6 @@ using Microsoft.MixedReality.SceneUnderstanding;
 // Unity
 using UnityEngine;
 using UnityEngine.Events;
-using TMPro;
 
 
 
@@ -67,6 +66,7 @@ public class MySUManager : MonoBehaviour
     [Range(1f, 60f)]
     public float AutoRefreshIntervalInSeconds = 10.0f;
 
+    [HideInInspector]
     public float TimeElapsedSinceLastAutoRefresh = 0.0f;
 
     [Header("Events")]
@@ -153,8 +153,6 @@ public class MySUManager : MonoBehaviour
     public bool RequestInferredRegions = true;
     // aggiunto io 
 
-    [SerializeField]
-    public TextMeshPro textObj = null;
 
     #endregion
 
@@ -168,6 +166,8 @@ public class MySUManager : MonoBehaviour
     private Guid LastDisplayedSceneGuid;
     private Task displayTask = null;
     private readonly int NumberOfSceneObjectsToLoadPerFrame = 5;
+
+    public bool renderForNavigation = false;
     #endregion
 
     #region Unity Start
@@ -212,11 +212,12 @@ public class MySUManager : MonoBehaviour
             {
                 try
                 {
-                    await DisplayDataAsync();
+                    TimeElapsedSinceLastAutoRefresh = 0.0f;
+                    await DisplayDataAsync(); 
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Error in Update");
+                    Debug.LogError("Error in Update");
                 }
                 TimeElapsedSinceLastAutoRefresh = 0.0f;
             }
@@ -399,6 +400,8 @@ public class MySUManager : MonoBehaviour
         {
             // Retrieve a transformation matrix that will allow us orient the Scene Understanding Objects into
             // their correct corresponding position in the unity world
+            
+
             System.Numerics.Matrix4x4? sceneToUnityTransformAsMatrix4x4 = GetSceneToUnityTransformAsMatrix4x4(suScene);
 
             if (sceneToUnityTransformAsMatrix4x4 != null)
@@ -406,11 +409,7 @@ public class MySUManager : MonoBehaviour
                 // If there was previously a scene displayed in the game world, destroy it
                 // to avoid overlap with the new scene about to be displayed
                 DestroyAllGameObjectsUnderParent(SceneRoot.transform);
-                // AGGIUNTA PER VEDERE POSIZIONE 
-                /*GameObject cupI = Instantiate(cup);
-                cupI.transform.parent = SceneRoot.transform;
-                cupI.transform.localPosition = Vector3.zero;
-                */
+
                 // Allow from one frame to yield the coroutine back to the main thread
                 yield return null;
 
@@ -424,7 +423,7 @@ public class MySUManager : MonoBehaviour
                 int i = 0;
                 foreach (SceneObject sceneObject in sceneObjects)
                 {
-                    if (DisplaySceneObject(sceneObject,false))
+                    if (DisplaySceneObject(sceneObject))
                     {
                         if (++i % NumberOfSceneObjectsToLoadPerFrame == 0)
                         {
@@ -450,7 +449,7 @@ public class MySUManager : MonoBehaviour
     /// Create a Unity Game Object for an individual Scene Understanding Object
     /// </summary>
     /// <param name="suObject">The Scene Understanding Object to generate in Unity</param>
-    private bool DisplaySceneObject(SceneObject suObject, bool sharedMap)
+    private bool DisplaySceneObject(SceneObject suObject)
     {
         if (suObject == null)
         {
@@ -493,14 +492,8 @@ public class MySUManager : MonoBehaviour
 
         // This gameobject will hold all the geometry that represents the Scene Understanding Object
         GameObject unityParentHolderObject = new GameObject(suObject.Kind.ToString());
-        /*if (sharedMap == true)
-        {
-            unityParentHolderObject.transform.parent = ParallelSceneRoot.transform;
-        }
-        else
-        {*/
-            unityParentHolderObject.transform.parent = SceneRoot.transform;
-        //}
+        unityParentHolderObject.transform.parent = SceneRoot.transform;
+        
         // Scene Understanding uses a Right Handed Coordinate System and Unity uses a left handed one, convert.
         System.Numerics.Matrix4x4 converted4x4LocationMatrix = ConvertRightHandedMatrix4x4ToLeftHanded(suObject.GetLocationAsMatrix());
         // From the converted Matrix pass its values into the unity transform (Numerics -> Unity.Transform)
@@ -509,6 +502,17 @@ public class MySUManager : MonoBehaviour
         // This list will keep track of all the individual objects that represent the geometry of
         // the Scene Understanding Object
         List<GameObject> unityGeometryObjects = null;
+        /*switch (kind)
+        {
+            // Create all the geometry and store it in the list
+            case SceneObjectKind.World:
+                unityGeometryObjects = CreateWorldMeshInUnity(suObject);
+                break;
+            default:
+                unityGeometryObjects = CreateSUObjectInUnity(suObject);
+                break;
+        }*/
+
         switch (kind)
         {
             // Create all the geometry and store it in the list
@@ -516,6 +520,16 @@ public class MySUManager : MonoBehaviour
                 unityGeometryObjects = CreateWorldMeshInUnity(suObject);
                 break;
             default:
+                if (renderForNavigation)
+                {
+                    if (kind == SceneObjectKind.Floor)
+                    {
+                        unityGeometryObjects = CreateSUObjectInUnity(suObject);
+                        break;
+                    }
+                    return false;
+                }
+
                 unityGeometryObjects = CreateSUObjectInUnity(suObject);
                 break;
         }
@@ -1127,7 +1141,6 @@ public class MySUManager : MonoBehaviour
 #if WINDOWS_UWP
                 var folder = WindowsStorage.ApplicationData.Current.LocalFolder;
                 //var folder = KnownFolders.Objects3D;
-                textObj.text = folder.Path;
                 var file = await folder.CreateFileAsync(fileName, WindowsStorage.CreationCollisionOption.ReplaceExisting);
                 await WindowsStorage.FileIO.WriteBytesAsync(file, OnDeviceBytes);
 #else
@@ -1156,32 +1169,6 @@ public class MySUManager : MonoBehaviour
     #endregion
 
     #region Load To Disk Functions
-    /// <summary>
-    ///  The Equivalent Method of the GetLatestSceneSerialization()
-    /// </summary>
-    /// <param name="sceneBytes"></param>
-    /// <returns></returns>
-    private SceneFragment GetParallelSceneSerialization(byte[] sceneBytes)
-    {
-        SceneFragment fragmentToReturn = null;
-        //lock (SUDataLock)
-        //{
-        if (sceneBytes != null)
-        {
-            //int sceneBytesLength = sceneBytes.Length;
-            // NON CARICO IN LatestSUSceneDat forse dovrei caricare una viariabile dedicata
-            //Array.Copy(sceneBytes, LatestSUSceneDat, sceneBytesLength);
-
-            fragmentToReturn = SceneFragment.Deserialize(sceneBytes);
-        }
-        else
-        {
-            
-        }
-        //}
-        return fragmentToReturn;
-    }
-
 
     // Task che permette di caricare una scena salvata come file.bin
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -1207,7 +1194,6 @@ public class MySUManager : MonoBehaviour
 
                 OnDeviceBytes = new byte[buffer.Length];
                 dataReader.ReadBytes(OnDeviceBytes);
-                //textObj.text = "reconverted on bytes";
 
 
 #else

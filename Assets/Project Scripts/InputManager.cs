@@ -78,14 +78,16 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private Material joinedMapMaterial = null;
 
-    [Tooltip("Goal Anchor")]
+    [Tooltip("agent controller module")]
     [SerializeField]
-    private WaypointNavigation goalAnchor = null;
+    private myAgentController agentController = null;
 
 
     private bool toggleMiniMap = false;
 
     private bool toggleSceenRoot = false;
+
+    private bool toggleRenderNav = false;
 
     #region Toggle Map Features
     public async void enableMeshWorld()
@@ -105,6 +107,35 @@ public class InputManager : MonoBehaviour
     {
         suManager.RenderSceneObjects = !suManager.RenderSceneObjects;
         await suManager.DisplayDataAsync();
+        Debug.Log("QUAD TOGGLED ");
+    }
+
+    public void toggleRenderNavigation()
+    {
+        toggleRenderNav = !toggleRenderNav;
+        if (toggleRenderNav)
+        {
+            RenderForNavigationOn();
+        }
+        else {
+            RenderForNavigationOff();
+        }
+    }
+    public async void RenderForNavigationOn()
+    {
+        suManager.RenderWorldMesh = true;
+        suManager.RenderSceneObjects = true;
+        suManager.renderForNavigation = true;
+        await suManager.DisplayDataAsync();
+
+    }
+    public async void RenderForNavigationOff()
+    {
+        suManager.RenderWorldMesh = false;
+        suManager.RenderSceneObjects = false;
+        suManager.renderForNavigation = false;
+        await suManager.DisplayDataAsync();
+
     }
 
     public void increaseRadius()
@@ -450,9 +481,16 @@ public class InputManager : MonoBehaviour
         await AzureModule.StartAzureSession();
         //await AzureModule.CreateAzureAnchor(GameObject.Find("anchor"));
         await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
-        //await AzureModule.CreateAzureAnchor(GameObject.Find("Anchor2"));
+        Debug.Log("First Anchor created");
         AzureModule.ShareAzureAnchorIdToNetwork();
         
+    }
+
+    public async void shareAnchor2()
+    {
+        await AzureModule.CreateAzureAnchor(GameObject.Find("Anchor2"));
+        Debug.Log("Second anchor shared");
+        AzureModule.ShareAzureAnchorIdToNetwork();
     }
 
     public async void findAnchor()
@@ -460,11 +498,6 @@ public class InputManager : MonoBehaviour
         AzureModule.GetAzureAnchorIdFromNetwork();
         await AzureModule.StartAzureSession();
         AzureModule.FindAzureAnchor();
-        //ARmarker = Instantiate<GameObject>(objToPlaceRef, Vector3.zero, Quaternion.identity);
-        //textObj.text = " Hologram reference instanciated ";
-        //ARmarker.transform.parent = GameObject.Find("SharedMapsManager").transform;
-        //ARmarker.transform.localPosition = Vector3.zero;
-        //textObj.text = " Hologram placed";
     }
 
     public async void StartSession()
@@ -479,9 +512,12 @@ public class InputManager : MonoBehaviour
 
     public void findSecondAnchor()
     {
-        AzureModule.FindAzureAnchor();
+        if (AzureModule.CurrentCloudAnchor != null)
+        {
+            AzureModule.LocateNearByAnchors(AzureModule.CurrentCloudAnchor);
+        }
+        else { Debug.LogError("Current Cloud Anchor is Null !!!"); }
     }
-
     #endregion
 
 
@@ -608,9 +644,12 @@ public class InputManager : MonoBehaviour
 
     #region Navigation
 
-    /*public void findSecondAnchor()
+    public void enableNavigation()
     {
-        AzureModule.LocateNearByAnchors();
-    }*/
+        agentController.initNavigation();
+        Debug.Log("Initialization Finished");
+        agentController.setDestination(agentController.Target.transform.position);
+        Debug.Log("Navigation Started Properly");
+    }
     #endregion
 }

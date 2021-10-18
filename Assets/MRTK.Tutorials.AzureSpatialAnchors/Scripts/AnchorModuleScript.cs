@@ -27,6 +27,8 @@ public class AnchorModuleScript : MonoBehaviour
     private CloudSpatialAnchor currentCloudAnchor;
     private AnchorLocateCriteria anchorLocateCriteria;
     private CloudSpatialAnchorWatcher currentWatcher;
+    private int anchorFoundCounter = 0;
+    GameObject selectedAnchor = null;
 
     private readonly Queue<Action> dispatchQueue = new Queue<Action>();
 
@@ -67,6 +69,11 @@ public class AnchorModuleScript : MonoBehaviour
         }
     }
     #endregion
+
+    public CloudSpatialAnchor CurrentCloudAnchor{
+        get { return this.currentCloudAnchor; }
+        
+}
 
     #region Public Methods
     //public async Task<bool> StartAzureSession()
@@ -272,6 +279,7 @@ public class AnchorModuleScript : MonoBehaviour
         Debug.Log("Azure anchor deleted successfully");
     }
 
+    #region local functions
     public void SaveAzureAnchorIdToDisk()
     {
         Debug.Log("\nAnchorModuleScript.SaveAzureAnchorIDToDisk()");
@@ -307,6 +315,7 @@ public class AnchorModuleScript : MonoBehaviour
 
         Debug.Log($"Current Azure anchor ID successfully updated with saved Azure anchor ID '{currentAzureAnchorID}' from path '{path}'");
     }
+    #endregion 
 
     public void ShareAzureAnchorIdToNetwork()
     {
@@ -376,11 +385,10 @@ public class AnchorModuleScript : MonoBehaviour
                 // Notify AnchorFeedbackScript
                 OnASAAnchorLocated?.Invoke();
 
-#if WINDOWS_UWP || UNITY_WSA
+//#if WINDOWS_UWP || UNITY_WSA
                 // HoloLens: The position will be set based on the unityARUserAnchor that was located.
 
-                // Create a local anchor at the location of the object in question
-                gameObject.CreateNativeAnchor();
+
 
                 // Notify AnchorFeedbackScript
                 OnCreateLocalAnchor?.Invoke();
@@ -394,13 +402,35 @@ public class AnchorModuleScript : MonoBehaviour
                 {
                     Debug.Log("Local anchor position successfully set to Azure anchor position");
 
-                    gameObject.GetComponent<UnityEngine.XR.WSA.WorldAnchor>().SetNativeSpatialAnchorPtr(currentCloudAnchor.LocalAnchor);
+                    Debug.Log($" Anchor Found {anchorFoundCounter}");
+                    selectedAnchor = null;
+                    selectedAnchor = anchorSelector();
+
+                    // Create a local anchor at the location of the object in question
+                    selectedAnchor.CreateNativeAnchor();
+
+                    if (selectedAnchor != null)
+                        Debug.Log($"Name of the selected anchor is {selectedAnchor}");
+
+                    if (currentCloudAnchor.LocalAnchor != null)
+                    {
+                        selectedAnchor.GetComponent<UnityEngine.XR.WSA.WorldAnchor>().SetNativeSpatialAnchorPtr(currentCloudAnchor.LocalAnchor);
+                        //Debug.Log("ANCHOR SELECTED");
+                        //moveAnchor(currentAnchor, anchorPose);
+
+                        //anchorFoundCounter += 1;
+                        Debug.Log($" Anchor Found {anchorFoundCounter}");
+
+                        //gameObject.GetComponent<UnityEngine.XR.WSA.WorldAnchor>().SetNativeSpatialAnchorPtr(currentCloudAnchor.LocalAnchor);
+                    }
+                    else { Debug.LogError("Local Anchor of the currentCloudAnchor is null !"); }
                 }
 
-#elif UNITY_ANDROID || UNITY_IOS
+/*#elif UNITY_ANDROID || UNITY_IOS
                 Pose anchorPose = Pose.identity;
                 anchorPose = currentCloudAnchor.GetPose();
 
+                
                 Debug.Log($"Setting object to anchor pose with position '{anchorPose.position}' and rotation '{anchorPose.rotation}'");
                 transform.position = anchorPose.position;
                 transform.rotation = anchorPose.rotation;
@@ -411,7 +441,7 @@ public class AnchorModuleScript : MonoBehaviour
                 // Notify AnchorFeedbackScript
                 OnCreateLocalAnchor?.Invoke();
 
-#endif
+#endif*/
             });
         }
         else
@@ -492,16 +522,26 @@ public class AnchorModuleScript : MonoBehaviour
     public delegate void DeleteASAAnchorDelegate();
     public event DeleteASAAnchorDelegate OnDeleteASAAnchor;
 
+    #endregion
+
+    #region Navigation 
+
+    /// <summary>
+    /// Method to locate nearby anchors given a already located one
+    /// </summary>
+    /// <param name="anchor"> alredy located anchor </param>
     public void LocateNearByAnchors(CloudSpatialAnchor anchor)
     {
-        if (anchor == null)
-            anchor = currentCloudAnchor;
 
-        AnchorLocateCriteria anchorLocateCriteria = new AnchorLocateCriteria();
-
+        // for locating nearby anchors
+        SetGraphEnabled(true, true);
+        // make sure it doesn't search for ID
+        anchorLocateCriteria.Identifiers = new string[0];
 
         NearAnchorCriteria nearAnchorCriteria = new NearAnchorCriteria();
         nearAnchorCriteria.SourceAnchor = anchor;
+        nearAnchorCriteria.DistanceInMeters = 20;
+        //nearAnchorCriteria.MaxResultCount = 4; // max anchor to find
         anchorLocateCriteria.NearAnchor = nearAnchorCriteria;
 
         if ((cloudManager != null) && (cloudManager.Session != null))
@@ -516,5 +556,57 @@ public class AnchorModuleScript : MonoBehaviour
             currentWatcher = null;
         }
     }
+
+    /// <summary>
+    /// Set the Graph mode to enable nearby anchor locating
+    /// </summary>
+    /// <param name="UseGraph"></param>
+    /// <param name="JustGraph"></param>
+    protected void SetGraphEnabled(bool UseGraph, bool JustGraph = false)
+    {
+        anchorLocateCriteria.Strategy = UseGraph ?
+                                        (JustGraph ? LocateStrategy.Relationship : LocateStrategy.AnyStrategy) :
+                                        LocateStrategy.VisualInformation;
+    }
+
     #endregion
+
+    /// <summary>
+    /// To move an anchor in the Pose detected by the Azure Spatial Anchor system
+    /// </summary>
+    /// <param name="anchor"> anchor to move </param>
+    /// <param name="anchorPose"> Pose to move the anchor to </param>
+    public void moveAnchor(GameObject anchor, Pose anchorPose)
+    {
+        Debug.Log($"Setting object to anchor pose with position '{anchorPose.position}' and rotation '{anchorPose.rotation}'");
+        anchor.transform.position = anchorPose.position;
+        anchor.transform.rotation = anchorPose.rotation;
+
+        // Create a native anchor at the location of the object in question
+        anchor.CreateNativeAnchor();
+    }
+
+    /// <summary>
+    /// returns the anchor that  must still be moved at that moment 
+    /// </summary>
+    /// <returns></returns>
+    public GameObject anchorSelector()
+    {
+        switch (anchorFoundCounter)
+        {
+            case 0:
+                Debug.Log("Cloud Data Manager anchor selected");
+                anchorFoundCounter +=1;
+                return GameObject.Find("CloudDataManager");
+            case 1:
+                Debug.Log("Anchor2 anchor selected");               
+                return GameObject.Find("Anchor2"); 
+
+            default:
+                Debug.LogError("ERROR: no more anchor to place ");
+                return null;
+        }
+
+    }
+
 }
