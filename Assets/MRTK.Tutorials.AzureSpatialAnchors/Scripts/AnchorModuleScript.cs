@@ -75,8 +75,8 @@ public class AnchorModuleScript : MonoBehaviour
         
 }
 
-    #region Public Methods
-    //public async Task<bool> StartAzureSession()
+    #region Basic Public Methods
+    
     public async Task StartAzureSession()
     {
         Debug.Log("\nAnchorModuleScript.StartAzureSession()");
@@ -369,6 +369,16 @@ public class AnchorModuleScript : MonoBehaviour
     }
     #endregion
 
+    #region Custom Public Methods
+
+    public async void shareNewAnchor(GameObject newAnchor)
+    {
+        await CreateAzureAnchor(newAnchor);
+        ShareAzureAnchorIdToNetwork();
+    }
+
+    #endregion
+
     #region Event Handlers
     private void CloudManager_AnchorLocated(object sender, AnchorLocatedEventArgs args)
     {
@@ -524,7 +534,7 @@ public class AnchorModuleScript : MonoBehaviour
 
     #endregion
 
-    #region Navigation 
+    #region Nearby anchor localization 
 
     /// <summary>
     /// Method to locate nearby anchors given a already located one
@@ -608,5 +618,7 @@ public class AnchorModuleScript : MonoBehaviour
         }
 
     }
+
+
 
 }

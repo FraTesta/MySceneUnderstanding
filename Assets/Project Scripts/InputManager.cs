@@ -90,6 +90,11 @@ public class InputManager : MonoBehaviour
     private bool toggleRenderNav = false;
 
     #region Toggle Map Features
+    public async void updateMesh()
+    {
+        await suManager.DisplayDataAsync();
+        Debug.Log("MESH UPDATED");
+    }
     public async void enableMeshWorld()
     {
         suManager.RenderWorldMesh = !suManager.RenderWorldMesh;
@@ -162,16 +167,11 @@ public class InputManager : MonoBehaviour
 
             for (int i = 0; i < SceneObjPlacer.holoObjects.Count; i++)
             {
-                //textObj.text = SceneObjPlacer.holoObjects[i].transform.parent.gameObject.name;
-                //objOriginalTransform.Add(SceneObjPlacer.holoObjects[i].transform.parent);
-                //textObj.text = "Salvato l'origin farme dell Ui Object";
-                //SceneObjPlacer.holoObjects[i].transform.parent = suMinimap.transform;
-
                 UIobjects.Add(Instantiate(SceneObjPlacer.holoObjects[i]));
-                UIobjects[i].name = "O";
+                UIobjects[i].name = "anchor" + i;
                 UIobjects[i].transform.parent = suMinimap.transform;
                 SceneObjPlacer.holoObjects[i].SetActive(false);
-                Debug.Log("Placed object: " + i);
+                Debug.Log("Placed Anchor" + i);
             }
         }
     }
@@ -257,35 +257,23 @@ public class InputManager : MonoBehaviour
 
 
             // add resized UI objects
-            //addUIobjects();
-            // add the resized path to the resized map
+            addUIobjects();
+            // add the user pose
             UserPose();
             //enableMiniPath();
 
 
-            // it was oroginally spawned in fornt of the user's view 
+            // spawn the minimap in front of the user view
             suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
             suMinimap.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
 
             // add the collider component
-            suMinimap.AddComponent<MeshCollider>();
-            if (suMinimap.GetComponent<MeshCollider>() == false)  // forse non serve neanche
-            {
+            //suMinimap.AddComponent<MeshCollider>();
 
-                Debug.Log(" No Mesh Collider added");
-            }
             suMinimap.AddComponent<ObjectManipulator>();
-            if (suMinimap.GetComponent<ObjectManipulator>() == false)
-            {
 
-                Debug.Log(" No ObjectManipulator added");
-            }
             suMinimap.AddComponent<NearInteractionGrabbable>();
-            if (suMinimap.GetComponent<NearInteractionGrabbable>() == false)
-            {
 
-                Debug.Log(" No NearInteractionGrabbable added");
-            }
             suManager.SceneRoot.SetActive(false);
 
         }
@@ -509,16 +497,20 @@ public class InputManager : MonoBehaviour
 
     #region Azure Spatial Anchor
 
+    /// <summary>
+    /// Initialize the Azure clous spatial anchor session and share the main anchor (CloudSpatialAnchor game object).
+    /// </summary>
     public async void shareAnchor()
     {
-        await AzureModule.StartAzureSession();
-        //await AzureModule.CreateAzureAnchor(GameObject.Find("anchor"));
-        await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
-        Debug.Log("First Anchor created");
+        StartSession();
+        createMainAnchor();
+        Debug.Log("Main Anchor created");
         AzureModule.ShareAzureAnchorIdToNetwork();
         
     }
-
+    /// <summary>
+    /// Share the second anchor called Anchor2, which should instanciated at the application start
+    /// </summary>
     public async void shareAnchor2()
     {
         await AzureModule.CreateAzureAnchor(GameObject.Find("Anchor2"));
@@ -526,6 +518,9 @@ public class InputManager : MonoBehaviour
         AzureModule.ShareAzureAnchorIdToNetwork();
     }
 
+    /// <summary>
+    /// Search the anchor with the ID saved on the cloud. It initialize a azure session as well.
+    /// </summary>
     public async void findAnchor()
     {
         AzureModule.GetAzureAnchorIdFromNetwork();
@@ -533,16 +528,22 @@ public class InputManager : MonoBehaviour
         AzureModule.FindAzureAnchor();
     }
 
-    public async void StartSession()
+    private async void StartSession()
     {
         await AzureModule.StartAzureSession();
     }
+    /// <summary>
+    /// Method to create the main anchor (CloudDataManager)
+    /// </summary>
 
-    public async void createAnchor()
+    private async void createMainAnchor()
     {
         await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
     }
 
+    /// <summary>
+    /// To find nearby anchors after locating the main one. 
+    /// </summary>
     public void findSecondAnchor()
     {
         if (AzureModule.CurrentCloudAnchor != null)
@@ -551,6 +552,8 @@ public class InputManager : MonoBehaviour
         }
         else { Debug.LogError("Current Cloud Anchor is Null !!!"); }
     }
+
+
     #endregion
 
 

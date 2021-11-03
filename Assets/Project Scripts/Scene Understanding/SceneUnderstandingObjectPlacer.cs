@@ -12,9 +12,15 @@
 /// <summary>
 public class SceneUnderstandingObjectPlacer : MonoBehaviour
 {
-    public GameObject objToPlaceRef;
-    public Material material;
-    public GameObject parentFrame;
+    [Tooltip("Game Object to place as reference")]
+    [SerializeField]
+    private GameObject objToPlaceRef;
+    [Tooltip("Material of the game object to place")]
+    [SerializeField]
+    private Material material;
+    [Tooltip("Parent Frame of the objects")]
+    [SerializeField]
+    private GameObject parentFrame;
 
     private GameObject objToPlace = null;  // settato a public
     private bool isPlacing = false;
@@ -24,10 +30,18 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     // Container for all instantiated objects/holograms
     public List<GameObject> holoObjects = new List<GameObject>();
 
+    [Tooltip("Anchor Module Script ")]
+    [SerializeField]
+    private AnchorModuleScript AnchorModue;
+
 
     private void StartPlacing()
     {
-        objToPlace = Instantiate<GameObject>(objToPlaceRef, Vector3.zero, Quaternion.identity);
+        objToPlace = Instantiate<GameObject>(objToPlaceRef, new Vector3(0,0,2), Quaternion.identity);
+        objToPlace.transform.localScale = new Vector3(0.018f, 0.018f, 0.018f);
+        BoxCollider bxObj = objToPlace.AddComponent<BoxCollider>();
+        bxObj.center = new Vector3(0, 3, 0);
+        bxObj.size = new Vector3(8, 9, 7);
         objToPlace.name = "anchor";
         objToPlace.transform.parent = parentFrame.transform;  
         // Add object to the list
@@ -52,8 +66,9 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
         }
     }
 
-    private void FinishPlacing()
+    private async void FinishPlacing()
     {
+        await AnchorModue.StartAzureSession();   
         // Enable collider for base object if it has any
         Collider parentCollider = objToPlace.GetComponent<Collider>();
         if (parentCollider != null)
@@ -79,6 +94,7 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
         {
             objectPlaced.Add(obj);
         }
+        AnchorModue.shareNewAnchor(objToPlace);
         objectPlaced.Add(objToPlace);
         //objectPlaced = objToPlace;
         objToPlace = null;
