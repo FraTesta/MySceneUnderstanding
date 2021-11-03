@@ -27,11 +27,8 @@ public class InputManager : MonoBehaviour
 
 
     #region Member Variables
+    
 
-
-
-    [Tooltip("Frame of the resized map.")]
-    [SerializeField]
     private GameObject suMinimap = null;
 
     private GameObject anchorMap = null;
@@ -82,6 +79,9 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private myAgentController agentController = null;
 
+    [Tooltip("User Prefab")]
+    [SerializeField]
+    private GameObject userPerfab = null;
 
     private bool toggleMiniMap = false;
 
@@ -157,7 +157,6 @@ public class InputManager : MonoBehaviour
     /// </summary>
     private void addUIobjects()
     {
-
         if (SceneObjPlacer.holoObjects.Count != 0)
         {
 
@@ -204,6 +203,16 @@ public class InputManager : MonoBehaviour
 
 
     }
+
+    private void UserPose()
+    {
+        GameObject userPose = Instantiate(userPerfab, Vector3.zero, Quaternion.identity);
+        userPose.transform.position = Camera.main.transform.position;
+        userPose.transform.rotation = Camera.main.transform.rotation;
+        userPose.transform.rotation = Quaternion.Euler(-90, userPose.transform.rotation.eulerAngles.y, userPose.transform.rotation.eulerAngles.z);
+        userPose.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+        userPose.transform.parent = suMinimap.transform;
+    }
     #endregion
 
     #region MiniMap Resize
@@ -211,10 +220,8 @@ public class InputManager : MonoBehaviour
     /// <summary>
     /// Turns the mini map on.
     /// </summary>
-    public void MiniMapOn()
+    private async void MiniMapOn()
     {
-        // DA RIMETTERE PRIVATE COME METODO 
-
 
         // If the world mesh is turned of, it will be turned on to visualize the minimap as well
         if (!suManager.RenderWorldMesh)
@@ -224,35 +231,61 @@ public class InputManager : MonoBehaviour
         {
 
             // Update the transform mutrix with the current position and rotation of the SceneRoot frame w.r.t. the global one
-            SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
+            //SceneRootTrasnMat = Matrix4x4.TRS(suManager.SceneRoot.transform.position, suManager.SceneRoot.transform.rotation, Vector3.one);
 
-            suMinimap = Instantiate(suManager.SceneRoot);
+            if (suManager.AddColliders == false)
+            {
+                suManager.AddColliders = true;
+                Debug.Log("Collider Activated");
+                await suManager.DisplayDataAsync();
+                suMinimap = Instantiate(suManager.SceneRoot);
+                suManager.AddColliders = false;
+                Debug.Log("Collider Deactivated");
+            }
+            else {
+                suMinimap = Instantiate(suManager.SceneRoot);
+            }
+
             suMinimap.name = "suMinimap";
-            
+
+
+
             // fare copia dell'ancora 
             // rendere suMinimap figlia e unire in un unico game object 
             // elminare su minimap
             // poi con nella joinMaps function posso usare questo medodo prima e unire la mappa scaricata alla mappa appena generata perchè il suo frame sarà quello dell'ancora 
 
-            //addUIobject();
-            addUIobjects();
+
+            // add resized UI objects
+            //addUIobjects();
+            // add the resized path to the resized map
+            UserPose();
+            //enableMiniPath();
+
 
             // it was oroginally spawned in fornt of the user's view 
             suMinimap.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
-            //suMinimap.transform.parent = GameObject.Find("CloudDataManager").transform;
-
-            //suMinimap.transform.position = GameObject.Find("CloudDataManager").transform.position;
-            suMinimap.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-
-
+            suMinimap.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
 
             // add the collider component
             suMinimap.AddComponent<MeshCollider>();
+            if (suMinimap.GetComponent<MeshCollider>() == false)  // forse non serve neanche
+            {
 
-            //Rigidbody rb = suMinimap.AddComponent<Rigidbody>();
-            // add the component Object Manipulator Grapable
+                Debug.Log(" No Mesh Collider added");
+            }
             suMinimap.AddComponent<ObjectManipulator>();
+            if (suMinimap.GetComponent<ObjectManipulator>() == false)
+            {
+
+                Debug.Log(" No ObjectManipulator added");
+            }
             suMinimap.AddComponent<NearInteractionGrabbable>();
+            if (suMinimap.GetComponent<NearInteractionGrabbable>() == false)
+            {
+
+                Debug.Log(" No NearInteractionGrabbable added");
+            }
             suManager.SceneRoot.SetActive(false);
 
         }
@@ -650,6 +683,15 @@ public class InputManager : MonoBehaviour
         Debug.Log("Initialization Finished");
         agentController.setDestination(agentController.Target.transform.position);
         Debug.Log("Navigation Started Properly");
+    }
+
+    public void enableMiniPath()
+    {
+        GameObject minimPath = Instantiate(GameObject.Find("InputManager"));
+        Debug.Log("Mini path instatnciated");
+        minimPath.transform.parent = suMinimap.transform;
+        Debug.Log("path parent set");
+        
     }
     #endregion
 }
