@@ -371,6 +371,7 @@ public class AnchorModuleScript : MonoBehaviour
 
     #region Custom Public Methods
 
+
     public async void shareNewAnchor(GameObject newAnchor)
     {
         await CreateAzureAnchor(newAnchor);

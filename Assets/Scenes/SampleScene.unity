@@ -706,6 +706,21 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+  - keyword: join Map
+    response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 131711615}
+          m_MethodName: joinMap
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
   persistentKeywords: 0
   speechConfirmationTooltipPrefab: {fileID: 8046114618238072051, guid: 271778f6c957b524981067a81d238394,
     type: 3}
@@ -2188,7 +2203,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &904913188
 Transform:
   m_ObjectHideFlags: 0
@@ -3726,6 +3741,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: 'My Find Anchor '
+      objectReference: {fileID: 0}
+    - target: {fileID: 2204069621426241315, guid: 3f1f46cbecbe08e46a303ccfdb5b498a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2204069621878992557, guid: 3f1f46cbecbe08e46a303ccfdb5b498a,
         type: 3}

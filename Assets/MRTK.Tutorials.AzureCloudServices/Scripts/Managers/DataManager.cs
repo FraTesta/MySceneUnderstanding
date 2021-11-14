@@ -53,7 +53,8 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
         private async void Awake()
         {
             storageAccount = CloudStorageAccount.Parse(connectionString);
-            cloudTableClient = storageAccount.CreateCloudTableClient();
+            blobClient = storageAccount.CreateCloudBlobClient();
+            /*cloudTableClient = storageAccount.CreateCloudTableClient();
             projectsTable = cloudTableClient.GetTableReference(projectsTableName);
             trackedObjectsTable = cloudTableClient.GetTableReference(trackedObjectsTableName);
             if (tryCreateTableOnStart)
@@ -76,7 +77,7 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
                     onDataManagerInitFailed?.Invoke();
                 }
             }
-
+            
             blobClient = storageAccount.CreateCloudBlobClient();
             blobContainer = blobClient.GetContainerReference(blockBlobContainerName);
             if (tryCreateBlobContainerOnStart)
@@ -98,8 +99,9 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
 
             IsReady = true;
             onDataManagerReady?.Invoke();
+            */
         }
-
+        #region Table method
         /// <summary>
         /// Get a project or create one if it does not exist.
         /// </summary>
@@ -218,6 +220,40 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
 
             return result.HttpStatusCode == (int)HttpStatusCode.OK;
         }
+        #endregion
+
+        #region Blob method
+        /// <summary>
+        /// Configure the connection with the container name. If there are no container with that ID, then a new container will be generated
+        /// </summary>
+        /// <param name="containerName">name of the desired container</param>
+        /// <returns></returns>
+
+        public async Task<bool> setBLOBContainer(string containerName)
+        {
+            blobContainer = blobClient.GetContainerReference(containerName);
+            if (tryCreateBlobContainerOnStart)
+            {
+                try
+                {
+                    if (await blobContainer.CreateIfNotExistsAsync())
+                    {
+                        Debug.Log($"Created container {containerName}.");
+                    }
+                }
+                catch (StorageException ex)
+                {
+                    Debug.LogError("Failed to connect with Azure Storage (BLOB).\nIf you are running with the default storage emulator configuration, please make sure you have started the storage emulator.");
+                    Debug.LogException(ex);
+                    onDataManagerInitFailed?.Invoke();
+                }
+            }
+
+            IsReady = true;
+            onDataManagerReady?.Invoke();
+            return IsReady;
+        }
+    
 
         /// <summary>
         /// Upload data to a blob.
@@ -238,7 +274,7 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
         /// </summary>
         /// <param name="blobName">Name of the blob.</param>
         /// <returns>Data as byte array.</returns>
-        public async Task<byte[]> DownloadBlob(string blobName)
+        public async Task<byte[]> DownloadBlob( string blobName)
         {
             var blockBlob = blobContainer.GetBlockBlobReference(blobName);
             using (var stream = new MemoryStream())
@@ -259,4 +295,5 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
             return await blockBlob.DeleteIfExistsAsync();
         }
     }
+    #endregion
 }

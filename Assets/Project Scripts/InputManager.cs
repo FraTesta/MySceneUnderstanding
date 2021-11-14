@@ -145,13 +145,14 @@ public class InputManager : MonoBehaviour
 
     public void increaseRadius()
     {
-        suManager.BoundingSphereRadiusInMeters += 5;
+        suManager.BoundingSphereRadiusInMeters += 10;
+        Debug.Log("SPHERE RADISU = " + suManager.BoundingSphereRadiusInMeters);
 
     }
     public void decreaseRadius()
     {
-        suManager.BoundingSphereRadiusInMeters -= 5;
-
+        suManager.BoundingSphereRadiusInMeters -= 10;
+        Debug.Log("SPHERE RADISU = " + suManager.BoundingSphereRadiusInMeters);
     }
     #endregion
 
@@ -420,6 +421,14 @@ public class InputManager : MonoBehaviour
     /// </summary>
     public async void uploadMapDataOnBLOB()
     {
+        string containerName = AzureModule.currentAzureAnchorID;
+        if (containerName == "")
+        {
+            Debug.LogError("The anchor ID is null, No BLOB container can be found");
+            return;
+        }
+            
+        await dataManager.setBLOBContainer(containerName);
         Debug.Log("Start uploading BLOB data\n");
         byte[] ARdata = sharedMeshManager.ARDataAsByte(suManager.SceneRoot, GameObject.Find("CloudDataManager"));
         await dataManager.UploadBlob(ARdata, "AR data BLOB");
@@ -453,8 +462,14 @@ public class InputManager : MonoBehaviour
     /// </summary>
     public async void downloadMapDataFromBLOB()
     {
+        string containerName = AzureModule.currentAzureAnchorID;
+        if (containerName == "")
+        {
+            Debug.LogError("The anchor ID is null, No BLOB container can be found");
+            return;
+        }
+        await dataManager.setBLOBContainer(containerName);
         Debug.Log("Start downloading BLOB data\n");
-        // download AR markers data
         var returnedARData = dataManager.DownloadBlob("AR data BLOB");
         byte[] ARDataByte = await returnedARData;
         if (ARDataByte == null)
@@ -502,8 +517,8 @@ public class InputManager : MonoBehaviour
     /// </summary>
     public async void shareAnchor()
     {
-        StartSession();
-        createMainAnchor();
+        await AzureModule.StartAzureSession();
+        await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
         Debug.Log("Main Anchor created");
         AzureModule.ShareAzureAnchorIdToNetwork();
         
@@ -526,19 +541,6 @@ public class InputManager : MonoBehaviour
         AzureModule.GetAzureAnchorIdFromNetwork();
         await AzureModule.StartAzureSession();
         AzureModule.FindAzureAnchor();
-    }
-
-    private async void StartSession()
-    {
-        await AzureModule.StartAzureSession();
-    }
-    /// <summary>
-    /// Method to create the main anchor (CloudDataManager)
-    /// </summary>
-
-    private async void createMainAnchor()
-    {
-        await AzureModule.CreateAzureAnchor(GameObject.Find("CloudDataManager"));
     }
 
     /// <summary>
@@ -646,7 +648,7 @@ public class InputManager : MonoBehaviour
     /// </summary>
     public void combineSubMaps()
     {
-        GameObject combinedJoinMaps = new GameObject("combinedJoinMaps");
+        GameObject combinedJoinMaps = new GameObject("combinedJoinMaps"); 
         GameObject joinMaps = GameObject.Find("joinMaps");
 
         Mesh mesh = sharedMeshManager.combineMesh(joinMaps, GameObject.Find("CloudDataManager"));
