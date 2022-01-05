@@ -9,97 +9,107 @@ using System;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
-using UnityEngine;
 
 namespace ARMarkersDataManager
 {
+    public enum ARtype
+    {
+        UserPose,
+        Alert,
+        SurvivorPose
+    }
+
+  /*  public class ARmarker
+    {
+
+
+
+        private string name;
+        private ARtype type;
+        private Vector3 position;
+        private Quaternion orientation;
+
+        public string Name { get { return name; } set { name = value; } }
+        public ARtype Type { get { return type; } set { type = value; } }
+        public Vector3 Position { get { return position; } set { position = value; } }
+        public Quaternion Orientation { get { return orientation; } set { orientation = value; } }
+
+        public ARmarker(string name, ARtype type)
+        {
+            this.name = name;
+            this.type = type;
+        }
+        public ARmarker(string name, ARtype type, Vector3 position, Quaternion orientation)
+        {
+            this.name = name;
+            this.type = type;
+            this.position = position;
+            this.orientation = orientation;
+        }
+    }*/
+
     /// <summary>
     /// Class that defines the relationships between the map frame and ARmarkers (anchors, ARobjects and User position)
     /// </summary>
     [Serializable]
     public class ARmarkersContainer
     {
-        public string name;
+
+        public string mainAnchorId;
         // position of the anchor frame w.r.t. the map one 
-        public float posX;
-        public float posY;
-        public float posZ;
+        public float MapPosX;
+        public float MapPosY;
+        public float MapPosZ;
         // orientation (Euler Angles) of the anchor frame w.r.t. the map one
-        public float rotX;
-        public float rotY;
-        public float rotZ;
+        public float MapRotX;
+        public float MapRotY;
+        public float MapRotZ;
         // position of the user w.r.t. the map frame
         public float userX;
         public float userY;
         public float userZ;
 
+        //public List<ARmarker> ARmarkerList = new List<ARmarker>();
 
-        public void SetAnchorPosition(Vector3 position)
+        const int maxNumberOfARmarkers = 5;
+
+        public string[] names = new string[maxNumberOfARmarkers];
+        public int[] type = new int[maxNumberOfARmarkers];
+        public float[] ARposX = new float[maxNumberOfARmarkers];
+        public float[] ARposY = new float[maxNumberOfARmarkers];
+        public float[] ARposZ = new float[maxNumberOfARmarkers];
+        public float[] ARrotX = new float[maxNumberOfARmarkers];
+        public float[] ARrotY = new float[maxNumberOfARmarkers];
+        public float[] ARrotZ = new float[maxNumberOfARmarkers];
+
+        int ARmarkerCount = 0;
+        public int ARmarkerStored = 0;
+
+
+        public void SetMapPosition(Vector3 position)
         {
-            this.posX = position.x;
-            this.posY = position.y;
-            this.posZ = position.z;
+            this.MapPosX = position.x;
+            this.MapPosY = position.y;
+            this.MapPosZ = position.z;
         }
 
-        public void SetAnchorOrientation(Quaternion orientation)
+        public void SetMapOrientation(Quaternion orientation)
         {
-            this.rotX = orientation.eulerAngles.x;
-            this.rotY = orientation.eulerAngles.y;
-            this.rotZ = orientation.eulerAngles.z;
+            this.MapRotX = orientation.eulerAngles.x;
+            this.MapRotY = orientation.eulerAngles.y;
+            this.MapRotZ = orientation.eulerAngles.z;
         }
 
-        /*public override bool Equals(object obj)
-        {
-            if (!(obj is Vector3S))
-            {
-                return false;
-            }
 
-            var s = (Vector3S)obj;
-            return x == s.x &&
-                   y == s.y &&
-                   z == s.z;
+        public Vector3 GetMapPosition()
+        {
+            return new Vector3(MapPosX, MapPosY, MapPosZ);
         }
 
-        public override int GetHashCode()
+        public Quaternion GetMapOrientation()
         {
-            var hashCode = 373119288;
-            hashCode = hashCode * -1521134295 + x.GetHashCode();
-            hashCode = hashCode * -1521134295 + y.GetHashCode();
-            hashCode = hashCode * -1521134295 + z.GetHashCode();
-            return hashCode;
-        }*/
-
-        public Vector3 GetAnchorPosition()
-        {
-            return new Vector3(posX, posY, posZ);
+            return Quaternion.Euler(MapRotX, MapRotY, MapRotZ);
         }
-
-        public Quaternion GetAchorOrientation()
-        {
-            return Quaternion.Euler(rotX, rotY, rotZ);
-        }
-        /*
-        public static bool operator ==(Vector3S a, Vector3S b)
-        {
-            return a.x == b.x && a.y == b.y && a.z == b.z;
-        }
-
-        public static bool operator !=(Vector3S a, Vector3S b)
-        {
-            return a.x != b.x && a.y != b.y && a.z != b.z;
-        }
-
-        public static implicit operator Vector3(Vector3S x)
-        {
-            return new Vector3(x.x, x.y, x.z);
-        }
-
-        public static implicit operator Vector3S(Vector3 x)
-        {
-            return new Vector3S(x.x, x.y, x.z);
-        }*/
-
 
 
         /// <summary>
@@ -135,6 +145,63 @@ namespace ARMarkersDataManager
 
             return obj;
         }
+
+        /// <summary>
+        /// Store all AR markers data present in the scene. They are stroed in the ARmarkerList
+        /// </summary>
+        public void storeARmarkers(string mainAnchorName)
+        {
+            mainAnchorId = mainAnchorName;
+
+            if (GameObject.FindGameObjectsWithTag("alert") == null)
+            {
+                Debug.Log("no alert AR markers found");
+                return;
+            }
+
+            foreach (GameObject g in GameObject.FindGameObjectsWithTag("alert"))
+            {
+                Debug.Log("storing AR markers called:" + g.name);
+                //ARmarker ARm = new ARmarker(g.name, ARtype.Alert , g.transform.localPosition, g.transform.localRotation);
+                //ARmarkerList.Add(ARm);
+                names[ARmarkerCount] = g.name;
+                type[ARmarkerCount] = 1;
+                g.transform.parent = GameObject.Find("CloudDataManager").transform;
+                ARposX[ARmarkerCount] = g.transform.localPosition.x;
+                ARposY[ARmarkerCount] = g.transform.localPosition.y;
+                ARposZ[ARmarkerCount] = g.transform.localPosition.z;
+                ARrotX[ARmarkerCount] = g.transform.localRotation.eulerAngles.x;
+                ARrotY[ARmarkerCount] = g.transform.localRotation.eulerAngles.y;
+                ARrotZ[ARmarkerCount] = g.transform.localRotation.eulerAngles.z;
+                g.transform.parent = GameObject.Find("SceneRoot").transform;
+                ARmarkerCount++;
+                ARmarkerStored++;
+            }
+            Debug.Log(ARmarkerCount + " AR markers stored");
+            ARmarkerCount = 0;
+        }
+
+        /// <summary>
+        /// Locate all the ARmarkers present in the bunary file
+        /// </summary>
+        /// <param name="container"></param>
+        /*public void placeDownladedMarkers(ARmarkersContainer container)
+        {
+            
+            foreach (ARmarker m in container.ARmarkerList)
+            {
+                if (m.Type == ARtype.Alert)
+                {
+                    GameObject alert = Instantiate<GameObject>(alertPrefab);
+                    alert.transform.parent = GameObject.Find("CloudDataManager").transform;
+                    alert.transform.position = m.Position;
+                    alert.transform.rotation = m.Orientation;
+                    alert.name = "alert_" + alert.transform.position.x + "_" + alert.transform.position.y + "_" + alert.transform.position.z;
+                    alertCount++;
+                }
+            }
+            alertCount = 0; 
+        }*/
 
     }
 }

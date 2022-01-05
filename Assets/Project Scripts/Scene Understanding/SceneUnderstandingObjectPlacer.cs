@@ -38,11 +38,12 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
     private void StartPlacing()
     {
         objToPlace = Instantiate<GameObject>(objToPlaceRef, new Vector3(0,0,2), Quaternion.identity);
-        objToPlace.transform.localScale = new Vector3(0.018f, 0.018f, 0.018f);
+        objToPlace.transform.localScale = new Vector3(0.02f, 0.02f, 0.02f);
         BoxCollider bxObj = objToPlace.AddComponent<BoxCollider>();
         bxObj.center = new Vector3(0, 3, 0);
         bxObj.size = new Vector3(8, 9, 7);
-        objToPlace.name = "anchor";
+
+        objToPlace.tag = "alert";
         objToPlace.transform.parent = parentFrame.transform;  
         // Add object to the list
         holoObjects.Add(objToPlace);
@@ -68,7 +69,7 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
 
     private async void FinishPlacing()
     {
-        await AnchorModue.StartAzureSession();   
+        //await AnchorModue.StartAzureSession();   
         // Enable collider for base object if it has any
         Collider parentCollider = objToPlace.GetComponent<Collider>();
         if (parentCollider != null)
@@ -86,16 +87,17 @@ public class SceneUnderstandingObjectPlacer : MonoBehaviour
                 childCollider.enabled = true;
             }
         }
-        // make this object child of the anchor one
-        //objToPlace.transform.parent = GameObject.Find("SharedMapsManager").transform;
-
         
-        foreach (GameObject obj in holoObjects)
-        {
-            objectPlaced.Add(obj);
-        }
-        AnchorModue.shareNewAnchor(objToPlace);
-        objectPlaced.Add(objToPlace);
+        //foreach (GameObject obj in holoObjects)
+        //{
+          //  objectPlaced.Add(obj);
+        //}
+
+        objToPlace.name = "alert_" + objToPlace.transform.localPosition.x + "_" + objToPlace.transform.localPosition.y + "_" + objToPlace.transform.localPosition.z;
+        // set as child of the current main cloud spatial anchor 
+        //objToPlace.transform.parent = GameObject.Find("CloudDataManager").transform;
+        //AnchorModue.shareNewAnchor(objToPlace);
+        //objectPlaced.Add(objToPlace);
         //objectPlaced = objToPlace;
         objToPlace = null;
     }

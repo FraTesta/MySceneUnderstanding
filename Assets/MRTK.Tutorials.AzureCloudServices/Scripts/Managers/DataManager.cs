@@ -224,30 +224,31 @@ namespace MRTK.Tutorials.AzureCloudServices.Scripts.Managers
 
         #region Blob method
         /// <summary>
-        /// Configure the connection with the container name. If there are no container with that ID, then a new container will be generated
+        /// Configure the connection with the containe's name. If there are no container with that ID, then a new container will be generated
         /// </summary>
         /// <param name="containerName">name of the desired container</param>
         /// <returns></returns>
 
         public async Task<bool> setBLOBContainer(string containerName)
         {
+            if (containerName == "")
+                Debug.LogError("The given container name is null");
+
             blobContainer = blobClient.GetContainerReference(containerName);
-            if (tryCreateBlobContainerOnStart)
+
+            try
             {
-                try
+                if (await blobContainer.CreateIfNotExistsAsync())
                 {
-                    if (await blobContainer.CreateIfNotExistsAsync())
-                    {
-                        Debug.Log($"Created container {containerName}.");
-                    }
-                }
-                catch (StorageException ex)
-                {
-                    Debug.LogError("Failed to connect with Azure Storage (BLOB).\nIf you are running with the default storage emulator configuration, please make sure you have started the storage emulator.");
-                    Debug.LogException(ex);
-                    onDataManagerInitFailed?.Invoke();
+                    Debug.Log($"Created container {containerName}.");
                 }
             }
+            catch (StorageException ex)
+            {
+                Debug.LogError("Failed to connect with Azure Storage (BLOB).\nIf you are running with the default storage emulator configuration, please make sure you have started the storage emulator.");
+                Debug.LogException(ex);
+                onDataManagerInitFailed?.Invoke();
+            }            
 
             IsReady = true;
             onDataManagerReady?.Invoke();

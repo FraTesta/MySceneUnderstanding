@@ -32,12 +32,17 @@ public class myAgentController : MonoBehaviour
     [SerializeField]
     private GameObject target;
 
+
+    [Tooltip("Climbing stairs ability")]
+    [SerializeField]
+    private bool climbingStairs = false;
+
     // gameobject which represent the projection of the camera frame on the floor surface
     private GameObject cameraProjection;
     private NavMeshAgent myNavMeshAgent;
     // to draw the path 
     private LineRenderer myLineRender;
-    private bool enableNagation = false;
+    private bool enableNavigation = false;
 
     public GameObject Target {
         get { return this.target; }
@@ -47,18 +52,22 @@ public class myAgentController : MonoBehaviour
     
 
     // Update is called once per frame
-    void Update()
+    /*void Update()
     {
-        if (enableNagation)
+        if (enableNavigation)
         {
             if (myNavMeshAgent.hasPath)
             {
                 drawPath();
+                enableNavigation = false;
             }
         }
-    }
+    }*/
 
     #region initNavMesh
+    /// <summary>
+    /// Initlizes all the NavMesh componets
+    /// </summary>
     public void initNavigation()
     {
         porjectCameraObject();
@@ -80,7 +89,7 @@ public class myAgentController : MonoBehaviour
         BakeMesh();
     }
 
-    public void BakeMesh()
+    private void BakeMesh()
     {
         //sceneRoot childeren walkable classification
         UpdateNavMeshSettingsForObjsUnderRoot();
@@ -90,14 +99,15 @@ public class myAgentController : MonoBehaviour
         Debug.Log("Blake Nave Mesh");
         // create the navMesh Agent
         //CreateNavMeshAgent();
-        enableNagation = true;
+        enableNavigation = true;
     }
 
     /// <summary>
     /// Analyze all childern of the sceneRoot, and classifies them as walkable or not walkable based on 
     /// </summary>
-    void UpdateNavMeshSettingsForObjsUnderRoot()
+    private void UpdateNavMeshSettingsForObjsUnderRoot()
     {
+
         // Iterate all the Scene Objects
         foreach (Transform sceneObjContainer in sceneRoot.transform)
         {
@@ -110,6 +120,11 @@ public class myAgentController : MonoBehaviour
                 // to see them
                 nvm.overrideArea = true;
                 nvm.area = sceneObj.parent.name == "Floor" ? (int)AreaType.Walkable : (int)AreaType.NotWalkable;
+                if (climbingStairs == true)
+                {
+                    nvm.area = sceneObj.parent.name == "World" ? (int)AreaType.Walkable : (int)AreaType.NotWalkable;
+                }
+                
             }
         }
         
@@ -117,10 +132,24 @@ public class myAgentController : MonoBehaviour
 
     #endregion
 
-    public void setDestination(Vector3 target)
+    public void setDestination(Vector3 targetPose)
     {
-        myNavMeshAgent.SetDestination(target);
+        if (targetPose == null)
+        {
+            myNavMeshAgent.SetDestination(Target.transform.position);
+        }
+        else
+        {
+            myNavMeshAgent.SetDestination(targetPose);
+        }
         Debug.Log("Desctination Sent");
+
+  /*      while (!myNavMeshAgent.hasPath)
+        {
+
+        }
+        drawPath();
+        enableNavigation = false;*/
     }
 
     private void drawPath()
@@ -174,6 +203,7 @@ public class myAgentController : MonoBehaviour
                     return sceneObj.transform.position.y;
             }
         }
+        Debug.LogError("No floor quads found");
         return -1000;
     }
 

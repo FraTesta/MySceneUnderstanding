@@ -24,6 +24,10 @@ public class SharedMeshManager : MonoBehaviour
     [SerializeField]
     public Material material = null;
 
+    [Header("AR markers prefab")]
+    [SerializeField]
+    private GameObject alertPrefab = null;
+
     private GameObject LoadedMap = null;
 
     private MeshFilter rootMesh;
@@ -53,6 +57,8 @@ public class SharedMeshManager : MonoBehaviour
         root.transform.localPosition = -directionVector;
         root.transform.localRotation = Quaternion.Euler(root.transform.InverseTransformDirection(directionVector));
     }
+
+    #region Combine Mesh
 
     /// <summary>
     /// Combine all separate mesh pieces attached to the SceneRoot Game Object into a single mesh component. Please notice that the root must be an empty gameObject
@@ -182,65 +188,9 @@ public class SharedMeshManager : MonoBehaviour
         return meshByte;
     }
 
-    /*public byte[] combineMeshAsByte(GameObject root, GameObject anchor)
-    {
-        GameObject parallelSceneRoot = Instantiate(root);
-        parallelSceneRoot.name = "parallelSceneroot";
+   
 
-        Vector3 realPosition = parallelSceneRoot.transform.position;
-        Quaternion realOrientation = parallelSceneRoot.transform.rotation;
-
-        parallelSceneRoot.transform.position = Vector3.zero;
-        parallelSceneRoot.transform.rotation = Quaternion.identity;
-
-        Debug.Log("parall local position " + parallelSceneRoot.transform.localPosition);
-
-        MeshFilter[] meshFilters = parallelSceneRoot.GetComponentsInChildren<MeshFilter>();
-
-        CombineInstance[] combine = new CombineInstance[meshFilters.Length];
-
-        Mesh finalMesh = new Mesh();
-
-        for (int i = 0; i < meshFilters.Length; i++)
-        {
-            if (meshFilters[i])
-            {
-                combine[i].mesh = meshFilters[i].sharedMesh;
-                combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
-
-                meshFilters[i].gameObject.SetActive(false);
-            }
-
-        }
-        MeshFilter rootMesh = parallelSceneRoot.transform.GetComponent<MeshFilter>();
-        //Because the scene root has no mesh component but only its childs, so we need to add it
-        if (rootMesh != null)
-        {
-            Debug.Log("reset mesh parallelSceneRoot");
-            rootMesh.mesh = new Mesh();
-        }
-        else
-        {
-            Debug.Log("parallelSceneRoot has no Mesh component, I add it");
-            rootMesh = parallelSceneRoot.AddComponent(typeof(MeshFilter)) as MeshFilter;
-
-            MeshRenderer rootMeshRender = parallelSceneRoot.AddComponent<MeshRenderer>() as MeshRenderer;
-            rootMeshRender.material = material;
-        }
-
-        finalMesh.CombineMeshes(combine);
-        parallelSceneRoot.GetComponent<MeshFilter>().mesh = finalMesh;
-        parallelSceneRoot.transform.position = realPosition;
-        parallelSceneRoot.transform.rotation = realOrientation;
-
-        MeshFilter meshNmae = parallelSceneRoot.GetComponent<MeshFilter>();
-
-        byte[] meshByte = MeshSerializer.SerializeMesh(meshNmae.mesh);
-        Debug.Log("combine mesh position" + meshNmae.transform.position);
-        DestroyImmediate(parallelSceneRoot);
-        return meshByte;
-    }*/
-
+    #endregion
 
     #region Save and Load Mesh Locally
     public void SaveMesh()
@@ -260,6 +210,9 @@ public class SharedMeshManager : MonoBehaviour
 #endif
     }
 
+    /// <summary>
+    /// To load a map saved as binary file on the device
+    /// </summary>
     public void LoadMesh()
     {
         //string path = Path.Combine(Application.persistentDataPath, url);
@@ -301,43 +254,32 @@ public class SharedMeshManager : MonoBehaviour
 
     #region Serialized Mesh and AR data as Byte array
 
-    // Old methods
-    #region Old methods
     /// <summary>
-    /// Return the whole mesh of the scene (SceneRoot)
-    /// </summary>
-    /// <returns></returns>
-    /*public byte[] MeshAsByte()
-    {
-        rootMesh = combineMesh(SceneRoot);
-        //Serialize the combined mesh of the map
-        
-        return MeshSerializer.SerializeMesh(rootMesh.mesh);
-        //return MeshSerializer.SerializeMesh(SceneRoot.transform.GetComponent<MeshFilter>().mesh);
-    }*/
-
-
-
-    /// <summary>
-    /// Return the AR data of the scene (SceneRoot) as byte array
+    /// Return the AR data of the scene (SceneRoot pose and ARmarkes) as byte array
     /// </summary>
     /// <returns></returns>
     public byte[] ARDataAsByte(GameObject root, GameObject anchor)
     {
         // Combine all separate mesh pieces into one
         root.transform.parent = anchor.transform;
-        ARmanager.SetAnchorPosition(root.transform.localPosition);
-        ARmanager.SetAnchorOrientation(root.transform.localRotation);
-        // per svincolare lo sceneRoot
+        ARmanager.SetMapPosition(root.transform.localPosition);
+        ARmanager.SetMapOrientation(root.transform.localRotation);
+
         root.transform.parent = null;
+
+        //Store AR markers 
+        ARmanager.storeARmarkers(anchor.name);
+
         // Serialize the ARdata
         return ARmanager.ARDataBinarySerialize(ARmanager);
     }
 
     /// <summary>
-    /// Joins the dowloaded mesh map (stored in parallelSceneRoot) with the  
+    /// Render the map and all ARmarkers relative to the passed anchor
     /// </summary>
-    /// <param name="ARDataByte"></param>
+    /// <param name="ARDataByte"> AR data downloaded from the BLOB container </param>
+    /// <param name="meshByte"> downloaded binary map mesh </param>
+    /// <param name="anchor"> refernce anchor  </param>
     public void LocateSubMap(byte[] ARDataByte, byte[] meshByte, GameObject anchor)
     {
         Debug.Log("Start joining map ");
@@ -363,15 +305,44 @@ public class SharedMeshManager : MonoBehaviour
             LoadedMap.transform.localRotation = Quaternion.identity;
             ARmarkersContainer ARData = (ARmarkersContainer)ARmanager.ARDataBinaryDeserialize(ARDataByte);
             Debug.Log("ARData deserialized properly");
-            LoadedMap.transform.localPosition = ARData.GetAnchorPosition();
-            LoadedMap.transform.localRotation = ARData.GetAchorOrientation();
+            LoadedMap.transform.localPosition = ARData.GetMapPosition();
+            LoadedMap.transform.localRotation = ARData.GetMapOrientation();
+
+            Debug.Log("Start AR markers placing ");
+            locateARmarkers(ARData);
         }
         else
         {
             Debug.LogError("Error joining submaps");
         }
     }
-    
+
+    #region AR markers placing
+    /// <summary>
+    /// Render the ARmarkers store in the binay file
+    /// </summary>
+    /// <param name="ARDataByte">Downloaded serialized AR data </param>
+    public void locateARmarkers(ARmarkersContainer ARData)
+    {
+        for(int i = 0; i < ARData.ARmarkerStored + 1; i++)
+        {
+            if (ARData.type[i] == 1)
+            {
+                GameObject alert =  Instantiate<GameObject>(alertPrefab, new Vector3(0, 0, 2), Quaternion.identity);
+                alert.transform.localScale = new Vector3(0.02f, 0.02f, 0.02f);
+                alert.transform.parent = GameObject.Find("CloudDataManager").transform;
+                alert.transform.localPosition = new Vector3(ARData.ARposX[i], ARData.ARposY[i], ARData.ARposZ[i]);
+                alert.transform.localRotation = Quaternion.Euler(ARData.ARrotX[i], ARData.ARrotY[i], ARData.ARrotZ[i]);
+                alert.name = "alert_" + alert.transform.localPosition.x + "_" + alert.transform.localPosition.y + "_" + alert.transform.localPosition.z;
+                alert.tag = "alert";
+                Debug.Log("Place AR marker named: " + alert.name);
+            }
+        }
+        Debug.Log("AR markers placed");
+    }
+
+    #endregion
+
 
     /// <summary>
     /// Load the mesh given a byte array
@@ -383,12 +354,10 @@ public class SharedMeshManager : MonoBehaviour
         {
             // ATT !!!  LoadedMap E' il CloudDataManager non dovrebbe essere questo subito provare ad usare parallelSceneRoot
 
-            LoadedMap.AddComponent<MeshFilter>();
-            Debug.Log("Mesh Filter component added to LoadedMap");
-            
+            LoadedMap.AddComponent<MeshFilter>();           
 
             LoadedMap.AddComponent<MeshRenderer>();
-            Debug.Log("Mesh Render component added to LoadedMap");
+
             
             material.SetColor("_Color", Color.red);
             LoadedMap.transform.GetComponent<MeshRenderer>().material = material;
@@ -416,13 +385,13 @@ public class SharedMeshManager : MonoBehaviour
             Debug.LogError("Error placing downloaded mesh");
         }
     }
-    #endregion
+
 
     /// <summary>
     /// Takes a Serialized mesh and locate it properly w.r.t. the spatial anchor. 
     /// </summary>
     /// <param name="meshByte"></param>
-    public void locateMap(byte[] meshByte)
+    /*public void locateMap(byte[] meshByte)
     {
         if (meshByte != null)
         {
@@ -452,8 +421,69 @@ public class SharedMeshManager : MonoBehaviour
         else {
             Debug.LogError("Mesh was wrongly combined!");
         }
-    }
+    }*/
 
 
+    #endregion
+
+    #region Utility
+    /*public byte[] combineMeshAsByte(GameObject root, GameObject anchor)
+   {
+       GameObject parallelSceneRoot = Instantiate(root);
+       parallelSceneRoot.name = "parallelSceneroot";
+
+       Vector3 realPosition = parallelSceneRoot.transform.position;
+       Quaternion realOrientation = parallelSceneRoot.transform.rotation;
+
+       parallelSceneRoot.transform.position = Vector3.zero;
+       parallelSceneRoot.transform.rotation = Quaternion.identity;
+
+       Debug.Log("parall local position " + parallelSceneRoot.transform.localPosition);
+
+       MeshFilter[] meshFilters = parallelSceneRoot.GetComponentsInChildren<MeshFilter>();
+
+       CombineInstance[] combine = new CombineInstance[meshFilters.Length];
+
+       Mesh finalMesh = new Mesh();
+
+       for (int i = 0; i < meshFilters.Length; i++)
+       {
+           if (meshFilters[i])
+           {
+               combine[i].mesh = meshFilters[i].sharedMesh;
+               combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
+
+               meshFilters[i].gameObject.SetActive(false);
+           }
+
+       }
+       MeshFilter rootMesh = parallelSceneRoot.transform.GetComponent<MeshFilter>();
+       //Because the scene root has no mesh component but only its childs, so we need to add it
+       if (rootMesh != null)
+       {
+           Debug.Log("reset mesh parallelSceneRoot");
+           rootMesh.mesh = new Mesh();
+       }
+       else
+       {
+           Debug.Log("parallelSceneRoot has no Mesh component, I add it");
+           rootMesh = parallelSceneRoot.AddComponent(typeof(MeshFilter)) as MeshFilter;
+
+           MeshRenderer rootMeshRender = parallelSceneRoot.AddComponent<MeshRenderer>() as MeshRenderer;
+           rootMeshRender.material = material;
+       }
+
+       finalMesh.CombineMeshes(combine);
+       parallelSceneRoot.GetComponent<MeshFilter>().mesh = finalMesh;
+       parallelSceneRoot.transform.position = realPosition;
+       parallelSceneRoot.transform.rotation = realOrientation;
+
+       MeshFilter meshNmae = parallelSceneRoot.GetComponent<MeshFilter>();
+
+       byte[] meshByte = MeshSerializer.SerializeMesh(meshNmae.mesh);
+       Debug.Log("combine mesh position" + meshNmae.transform.position);
+       DestroyImmediate(parallelSceneRoot);
+       return meshByte;
+   }*/
     #endregion
 }

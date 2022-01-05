@@ -19,6 +19,19 @@ public class AnchorModuleScript : MonoBehaviour
     [Tooltip("The unique identifier used to identify the shared file (containing the Azure anchor ID) on the web server.")]
     private string publicSharingPin = "1982734901747";
 
+    [Header("Nearby anchor locating criteria")]
+    [Tooltip("Radius of nearby anchors that should be located")]
+    [SerializeField]
+    private int findNearRadius = 20;
+
+    [Tooltip("Radius of nearby anchors that should be located")]
+    [SerializeField]
+    private int maxNumberOfNearAnchor = 3;
+
+    [Header("Anchor prefab")]
+    [SerializeField]
+    private GameObject AnchorPrefRef;
+
     [HideInInspector]
     // Anchor ID for anchor stored in Azure (provided by Azure) 
     public string currentAzureAnchorID = "";
@@ -73,9 +86,9 @@ public class AnchorModuleScript : MonoBehaviour
     public CloudSpatialAnchor CurrentCloudAnchor{
         get { return this.currentCloudAnchor; }
         
-}
+    }
 
-    #region Basic Public Methods
+    
     
     public async Task StartAzureSession()
     {
@@ -146,7 +159,7 @@ public class AnchorModuleScript : MonoBehaviour
             Debug.Log("Local anchor created");
         }
 
-        // In this sample app we delete the cloud anchor explicitly, but here we show how to set an anchor to expire automatically
+        // We delete the cloud anchor explicitly, but here we show how to set an anchor to expire automatically
         localCloudAnchor.Expiration = DateTimeOffset.Now.AddDays(7);
 
         // Save anchor to cloud
@@ -279,7 +292,7 @@ public class AnchorModuleScript : MonoBehaviour
         Debug.Log("Azure anchor deleted successfully");
     }
 
-    #region local functions
+    #region Anchor ID local sharing
     public void SaveAzureAnchorIdToDisk()
     {
         Debug.Log("\nAnchorModuleScript.SaveAzureAnchorIDToDisk()");
@@ -315,8 +328,9 @@ public class AnchorModuleScript : MonoBehaviour
 
         Debug.Log($"Current Azure anchor ID successfully updated with saved Azure anchor ID '{currentAzureAnchorID}' from path '{path}'");
     }
-    #endregion 
+    #endregion
 
+    #region Anchor ID web sharing
     public void ShareAzureAnchorIdToNetwork()
     {
         Debug.Log("\nAnchorModuleScript.ShareAzureAnchorID()");
@@ -366,6 +380,26 @@ public class AnchorModuleScript : MonoBehaviour
         Debug.Log("\nAnchorModuleScript.GetSharedAzureAnchorID()");
 
         StartCoroutine(GetSharedAzureAnchorIDCoroutine(publicSharingPin));
+        /*while (currentAzureAnchorID == "" || currentAzureAnchorID == null)
+        {
+            GetSharedAzureAnchorID(publicSharingPin);
+            new WaitForSeconds(3);
+        }*/
+        Debug.Log("Azure ID updated");
+    }
+
+    public async void GetAzureAnchorIDFromNetworkOneTime()
+    {
+        Debug.Log("Get ID 1 time");
+        GetSharedAzureAnchorID(publicSharingPin);
+        await StartAzureSession();
+    }
+
+    public async void GetAzureAnchorIDFromNetworkLocal()
+    {
+        Debug.Log("Get ID local");
+        GetAzureAnchorIdFromDisk();
+        await StartAzureSession();
     }
     #endregion
 
@@ -381,6 +415,11 @@ public class AnchorModuleScript : MonoBehaviour
     #endregion
 
     #region Event Handlers
+    /// <summary>
+    /// Event handler for finding cloud spatial anchors. It gets called when a possible anchor location gets found.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
     private void CloudManager_AnchorLocated(object sender, AnchorLocatedEventArgs args)
     {
         QueueOnUpdate(new Action(() => Debug.Log($"Anchor recognized as a possible Azure anchor")));
@@ -394,7 +433,7 @@ public class AnchorModuleScript : MonoBehaviour
                 Debug.Log($"Azure anchor located successfully");
 
                 // Notify AnchorFeedbackScript
-                OnASAAnchorLocated?.Invoke();
+                //OnASAAnchorLocated?.Invoke();
 
 //#if WINDOWS_UWP || UNITY_WSA
                 // HoloLens: The position will be set based on the unityARUserAnchor that was located.
@@ -413,7 +452,6 @@ public class AnchorModuleScript : MonoBehaviour
                 {
                     Debug.Log("Local anchor position successfully set to Azure anchor position");
 
-                    Debug.Log($" Anchor Found {anchorFoundCounter}");
                     selectedAnchor = null;
                     selectedAnchor = anchorSelector();
 
@@ -435,6 +473,9 @@ public class AnchorModuleScript : MonoBehaviour
                         //gameObject.GetComponent<UnityEngine.XR.WSA.WorldAnchor>().SetNativeSpatialAnchorPtr(currentCloudAnchor.LocalAnchor);
                     }
                     else { Debug.LogError("Local Anchor of the currentCloudAnchor is null !"); }
+                }
+                else {
+                    Debug.LogError("ERROR: No anchor found");
                 }
 
 /*#elif UNITY_ANDROID || UNITY_IOS
@@ -487,6 +528,43 @@ public class AnchorModuleScript : MonoBehaviour
             else
             {
                 Debug.Log("Downloading... please wait...");
+
+                string filename = "SharedAzureAnchorID." + publicSharingPin;
+                string path = Application.persistentDataPath;
+
+#if WINDOWS_UWP
+                StorageFolder storageFolder = ApplicationData.Current.LocalFolder;
+                path = storageFolder.Path;
+#endif
+                currentAzureAnchorID = www.downloadHandler.text;
+
+                if (currentAzureAnchorID == "" || currentAzureAnchorID == null)
+                    Debug.LogError("ERROR: anchor ID not recived");
+                else 
+                    Debug.Log($"Current Azure anchor ID successfully updated with shared Azure anchor ID '{currentAzureAnchorID}' url");
+
+                string filePath = Path.Combine(path, filename);
+                File.WriteAllText(filePath, currentAzureAnchorID);
+            }
+        }
+    }
+
+    private void GetSharedAzureAnchorID(string sharingPin)
+    {
+        string url = "http://167.99.111.15:8090/file-uploads/static/file." + sharingPin.ToLower();
+
+        //Debug.Log($"Looking for url '{url}'... please wait...");
+
+        using (UnityWebRequest www = UnityWebRequest.Get(url))
+        {
+            www.SendWebRequest();
+            if (www.isNetworkError || www.isHttpError)
+            {
+                Debug.Log(www.error);
+            }
+            else
+            {
+                //Debug.Log("Downloading... please wait...");
 
                 string filename = "SharedAzureAnchorID." + publicSharingPin;
                 string path = Application.persistentDataPath;
@@ -551,8 +629,8 @@ public class AnchorModuleScript : MonoBehaviour
 
         NearAnchorCriteria nearAnchorCriteria = new NearAnchorCriteria();
         nearAnchorCriteria.SourceAnchor = anchor;
-        nearAnchorCriteria.DistanceInMeters = 20;
-        //nearAnchorCriteria.MaxResultCount = 4; // max anchor to find
+        nearAnchorCriteria.DistanceInMeters = findNearRadius;
+        nearAnchorCriteria.MaxResultCount = maxNumberOfNearAnchor; 
         anchorLocateCriteria.NearAnchor = nearAnchorCriteria;
 
         if ((cloudManager != null) && (cloudManager.Session != null))
@@ -580,8 +658,6 @@ public class AnchorModuleScript : MonoBehaviour
                                         LocateStrategy.VisualInformation;
     }
 
-    #endregion
-
     /// <summary>
     /// To move an anchor in the Pose detected by the Azure Spatial Anchor system
     /// </summary>
@@ -606,19 +682,24 @@ public class AnchorModuleScript : MonoBehaviour
         switch (anchorFoundCounter)
         {
             case 0:
-                Debug.Log("Cloud Data Manager anchor selected");
-                anchorFoundCounter +=1;
+                Debug.Log("Main anchor placing...");
+                anchorFoundCounter += 1;
                 return GameObject.Find("CloudDataManager");
-            case 1:
-                Debug.Log("Anchor2 anchor selected");               
-                return GameObject.Find("Anchor2"); 
-
             default:
-                Debug.LogError("ERROR: no more anchor to place ");
-                return null;
+                Debug.Log("Nearby anchor placing");
+                GameObject nearbyAnchor = Instantiate<GameObject>(AnchorPrefRef, new Vector3(0, 0, 0), Quaternion.Euler(new Vector3(-90, 0, 0)));
+                nearbyAnchor.name = "nearbyAnchor";
+                nearbyAnchor.tag = "anchor";
+                nearbyAnchor.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+                return nearbyAnchor;
+
         }
 
     }
+
+    #endregion
+
+
 
 
 
