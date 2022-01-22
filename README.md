@@ -62,7 +62,6 @@ Finally, a navigation algorithm has been implemented to prove the system's consi
 |WinRT Projections | 0.5.1052 |
 
 
-
 ## __Installation__
 1. Clone the repository
 2. Install the Unity and Visual Studio versions described above
@@ -72,8 +71,51 @@ Finally, a navigation algorithm has been implemented to prove the system's consi
 5. Open Build Settings and switch in the Universal Windows Platform
 6. Select the minimum pltform version available, Visual Studio 2019 as VS version, and USB Device as Build And Run On label.  
 7. Click on Player Settings -> Plyer -> XR Settings and select Virtual Reality Supported and make sure that the Depth Format is set as 16-bit depth and the Depth Buffer Sharing is enabled
-8. Come back in the Build Settings window and build the application
+
+The application exploits the Azure Spatial Anchors and Azure Storage Account services to guarantee a fast and reliable collaboration experience among different users. Therefore, you have to fill the fields of the following Unity module contained in the CludDataManager GameObject with your credential. 
+
+- CloudDataManager -> Spatial Anchor Manager: please digit your Spatial Anchor Account ID, Key and Domain.
+- CloudDataManager -> Data Manager: digit the connection string of your Azure Storage Account. 
+
+## __Build & Deploy__
+After the previous steps
+1. Build the app: File -> Build Settings 
+2. Make sure that: 
+   1. Target Device = Any Device
+   2. Architecture = x64
+   3. Minimum Platform Version = 10.0.18362.0 (or the oldest available)
+   4. Visual Studio Version = Visual Studio 2019
+3. Select Build
+4. Open the file.sln generated
+5. Follows this to tutorial to deploy tha app according to your preferencies (e.g. USB cable or wifi): https://docs.microsoft.com/en-us/windows/mixed-reality/develop/advanced-concepts/using-visual-studio?tabs=hl2
+
+# __Application Usage__
+Currently, the user can interact with the application using voice commands. However, in the Unity Scene, you can find a Game Object to manage a hand menu that shows up some buttons when the user turns up his/her hand. When you launch the app from device you will see a green capsule which represent the shared coordinate system (Spatial Anchor) that the application use uses to share all the information among different devices or application sessions. You are free to place it wherever you want just by grasping it and moving it in the desired location. 
+
+Follows the keywords to activate the implemented commands:
+### Main Commands
+- __Toggle Mesh__ = shows the scanned are as a blue triangle mesh.
+- __Toggle Mini__ = generates a down-scale version of the current scanned area that you can grasp to move it and resize it.  
+- __Update Mesh__ =  the holographic mesh is automatically updated, but you can refresh it by saying this command.
+- __Toggle Quads__ = shows a different holographic mesh rendering of the scanned area, which infers environmental features like walls or ceilings. This mode must be enabled to use the navigation capabilities of the application.
+- __Alert__ = places a holographic red cone. It is just an example of information placement that might represent a dangerous area that other operators must avoid. Any other kind of 3D object can be placed as well.
+- __Navigation__ = generates a pink path to reach the current green capsule location (Spatial Anchor). Please notice that currently, to exploit this functionality, the Quads mode (Toggle Quads to enable it) must be activated, and the anchor should be placed in a location close to the ground and not too far from it.
+
+### Shareing Commands
+To easly test the collaboration skills of the application consider to: open the app -> generate and share data -> close the app -> open the app again -> download and visualize the information generated in the previous session. 
+ 
+#### First Session:
+1. Share the current anchor location saying: __Share Anchor__
+2. Upload the current map and all the generated information (Holograms) saying: __Upload Map__
+
+#### Secon Session:
+1. Say: __Get ID__
+2. Place the anchor saying: __Find Anchor__
+3. When you visualize the anchor in the right position, Download and place the information: __Download Map__
+4. You can caombine the download map and the current one saying: __Combine Maps__  
 
 ## __Contacts__
-Francesco Testa 
-email: francesco.testa.ge@gmail.com
+<img align="left" alt="codeSTACKr | LinkedIn" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/linkedin.svg" />[Francesco Testa](https://www.linkedin.com/in/francesco-testa-49183b222/)
+
+<img align="left" alt="codeSTACKr | Gmail" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/gmail.svg" />  francesco.testa.ge@gmail.com
+
